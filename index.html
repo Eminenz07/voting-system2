@@ -2,10 +2,77 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="refresh" content="0;url=/student/login.html"/>
-<title>AU Vote — Redirecting…</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Adeleke University E-Voting System</title>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+    .splash {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(155deg, #0A0F1C 0%, #001A5E 55%, #003DA5 100%);
+        color: #fff;
+        text-align: center;
+        padding: 2rem;
+    }
+    .splash-logo {
+        width: 5rem; height: 5rem;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(245,180,0,.6);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 0 0 8px rgba(245,180,0,.1);
+    }
+    .splash h1 {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin-bottom: .5rem;
+        color: #fff;
+    }
+    .splash p {
+        opacity: .7;
+        font-size: .9375rem;
+        margin-bottom: 2rem;
+    }
+    .splash-spinner {
+        width: 2rem; height: 2rem;
+        border: 3px solid rgba(255,255,255,.15);
+        border-top-color: var(--au-gold);
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-<p>Redirecting to <a href="/student/login.html">AU E-Voting System</a>…</p>
+<div class="splash">
+    <img src="/assets/au-logo.png" alt="AU" class="splash-logo" onerror="this.style.display='none'"/>
+    <h1>Adeleke University</h1>
+    <p>E-Voting System</p>
+    <div class="splash-spinner"></div>
+</div>
+
+<script>
+// Smart redirect based on existing session
+(function() {
+    try {
+        const session = JSON.parse(localStorage.getItem('au_session'));
+        if (session && localStorage.getItem('au_token')) {
+            if (['uni_admin', 'faculty_admin'].includes(session.role)) {
+                window.location.replace('/admin/dashboard.html');
+            } else {
+                window.location.replace('/student/dashboard.html');
+            }
+            return;
+        }
+    } catch {}
+
+    // No session — go to student login
+    window.location.replace('/student/login.html');
+})();
+</script>
 </body>
 </html>
