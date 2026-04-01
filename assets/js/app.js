@@ -5,7 +5,7 @@
 
 'use strict';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://voting-system2-production.up.railway.app/api';
 
 // ── API Client ────────────────────────────────────────────────────────────────
 const API = {
