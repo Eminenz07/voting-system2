@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Dashboard</title>
+<meta name="description" content="Your student dashboard. See active elections, announcements, and your voting status."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.welcome-banner {
+    background: linear-gradient(135deg, var(--au-blue) 0%, var(--au-blue-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 2rem 2.5rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+.welcome-banner::after {
+    content: '';
+    position: absolute;
+    right: -3rem; bottom: -3rem;
+    width: 14rem; height: 14rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,.05);
+}
+.welcome-banner::before {
+    content: '';
+    position: absolute;
+    right: 6rem; top: -2rem;
+    width: 8rem; height: 8rem;
+    border-radius: 50%;
+    background: rgba(245,180,0,.1);
+}
+.verification-alert {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning);
+    border-left: 4px solid var(--warning);
+    border-radius: var(--radius);
+    padding: .875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+    font-size: .875rem;
+    color: var(--warning);
+    font-weight: 500;
+}
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.announcement-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: .875rem;
+    align-items: flex-start;
+}
+.announcement-item:last-child { border-bottom: none; }
+.ann-icon {
+    width: 2.25rem; height: 2.25rem;
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+.ann-icon--urgent { background:var(--danger-bg); color:var(--danger); }
+.ann-icon--normal { background:var(--au-blue-light); color:var(--au-blue); }
+.content-grid { display:grid; grid-template-columns:1fr 20rem; gap:1.5rem; align-items:start; }
+@media(max-width:900px){ .content-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <!-- Header -->
+    <header class="app-header">
+        <a href="/student/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">Adeleke University</div>
+                <div class="brand-sub">E-Voting System</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()" title="Toggle dark mode">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <div class="user-chip" id="user-chip">
+                <div class="user-chip-avatar" id="avatar-initials">—</div>
+                <span id="user-name-chip">Loading…</span>
+            </div>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <!-- Main -->
+    <main class="app-main">
+        <!-- Welcome Banner -->
+        <div class="welcome-banner" id="welcome-banner">
+            <div style="position:relative;z-index:1">
+                <p style="opacity:.75;font-size:.875rem;margin-bottom:.25rem;">Good day,</p>
+                <h2 style="font-size:1.75rem;color:#fff;margin-bottom:.5rem" id="welcome-name">—</h2>
+                <p style="opacity:.8;font-size:.9375rem" id="welcome-sub">Your voice matters. Participate in active elections below.</p>
+            </div>
+            <div style="position:relative;z-index:1;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:.375rem;text-align:center">
+                <div style="font-family:var(--font-display);font-size:2.5rem;font-weight:800;color:#fff" id="banner-active-count">—</div>
+                <div style="font-size:.8125rem;opacity:.75">Active Election(s)</div>
+            </div>
+        </div>
+
+        <!-- Verification alert -->
+        <div class="verification-alert hidden" id="verify-alert">
+            <span class="material-symbols-outlined">warning</span>
+            <div>
+                <strong>Account not verified.</strong>
+                You can browse elections but cannot vote until an administrator verifies your account.
+                <a href="/student/profile.html" style="color:inherit;text-decoration:underline;margin-left:.25rem">View profile</a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid mb-6" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Active Elections</div>
+                <div class="stat-value" id="stat-active">—</div>
+                <div class="stat-sub">Open for voting</div>
+            </div>
+            <div class="stat-card stat-card--gold">
+                <div class="stat-label">Your Votes Cast</div>
+                <div class="stat-value" id="stat-voted">—</div>
+                <div class="stat-sub">Elections participated</div>
+            </div>
+            <div class="stat-card stat-card--success">
+                <div class="stat-label">Verification</div>
+                <div class="stat-value" id="stat-verified">—</div>
+                <div class="stat-sub">Account status</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <!-- Active Elections -->
+            <div>
+                <div class="section-header">
+                    <h3>Active Elections</h3>
+                    <a href="/student/elections.html" class="btn btn-ghost btn-sm">
+                        View all <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                    </a>
+                </div>
+                <div id="elections-list">
+                    <div class="card" style="text-align:center;padding:3rem;color:var(--text-3)">
+                        <div class="skeleton" style="height:1rem;width:50%;margin:0 auto .75rem"></div>
+                        <div class="skeleton" style="height:1rem;width:35%;margin:0 auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar: Announcements -->
+            <div>
+                <div class="section-header">
+                    <h3>Announcements</h3>
+                </div>
+                <div class="card" style="padding:0">
+                    <div id="announcements-list">
+                        <div style="padding:1.5rem;text-align:center;color:var(--text-3);font-size:.875rem">
+                            Loading…
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireStudent();
+    if (!user) return;
+
+    // Build UI
+    document.getElementById('sidebar').appendChild(Nav.student('dashboard'));
+    document.getElementById('user-name-chip').textContent = user.full_name || user.first_name;
+    document.getElementById('welcome-name').textContent = user.first_name || user.full_name;
+    const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || '?';
+    document.getElementById('avatar-initials').textContent = initials;
+
+    if (!user.is_verified) {
+        document.getElementById('verify-alert').classList.remove('hidden');
+        document.getElementById('stat-verified').textContent = 'Unverified';
+        document.getElementById('stat-verified').style.color = 'var(--danger)';
+        document.getElementById('stat-verified').style.fontSize = '1.25rem';
+    } else {
+        document.getElementById('stat-verified').textContent = 'Verified ✓';
+        document.getElementById('stat-verified').style.color = 'var(--success)';
+        document.getElementById('stat-verified').style.fontSize = '1.25rem';
+    }
+
+    // Load elections
+    try {
+        const elections = await API.get('/elections/');
+        const active = elections.filter(e => e.status === 'active');
+        document.getElementById('stat-active').textContent = active.length;
+        document.getElementById('banner-active-count').textContent = active.length;
+
+        const el = document.getElementById('elections-list');
+        if (!active.length) {
+            el.innerHTML = `<div class="card" style="text-align:center;padding:3rem;color:var(--text-3)">
+                <span class="material-symbols-outlined" style="font-size:3rem;display:block;margin-bottom:.75rem">event_busy</span>
+                No active elections right now. Check back soon.
+            </div>`;
+        } else {
+            el.innerHTML = active.slice(0, 3).map(e => `
+                <div class="election-card mb-4">
+                    <div class="election-card-header">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            ${statusBadge(e.status)}
+                            <span style="font-size:.8125rem;opacity:.75">${elapsedLabel(e.end_date)}</span>
+                        </div>
+                        <h3 style="color:#fff;font-size:1.125rem;margin-bottom:.25rem">${e.title}</h3>
+                        <p style="font-size:.8125rem;opacity:.75">${e.election_type === 'university' ? 'University-wide' : e.election_type === 'faculty' ? 'Faculty: ' + e.faculty_scope : 'Department: ' + e.department_scope}</p>
+                    </div>
+                    <div class="election-card-footer">
+                        <div class="flex items-center gap-4" style="font-size:.8125rem;color:var(--text-2)">
+                            <span><strong>${e.total_votes || 0}</strong> votes cast</span>
+                            <span>${e.positions_count || 0} position(s)</span>
+                        </div>
+                        <a href="/student/ballot.html?id=${e.id}" class="btn btn-primary btn-sm">
+                            Vote Now <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>`).join('');
+        }
+        document.getElementById('stat-voted').textContent = elections.filter(e => e.has_voted).length;
+    } catch {
+        Toast.show('Could not load elections.', 'error');
+    }
+
+    // Load announcements
+    try {
+        const anns = await API.get('/announcements/');
+        const ann = document.getElementById('announcements-list');
+        if (!anns.length) {
+            ann.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--text-3);font-size:.875rem">No announcements.</div>`;
+        } else {
+            ann.innerHTML = anns.slice(0, 6).map(a => `
+                <div class="announcement-item">
+                    <div class="ann-icon ann-icon--${a.priority}">
+                        <span class="material-symbols-outlined" style="font-size:1rem">${a.priority === 'urgent' ? 'priority_high' : 'campaign'}</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:.875rem;margin-bottom:.125rem">${a.title}</div>
+                        <div style="font-size:.8125rem;color:var(--text-2);line-height:1.5">${a.body.slice(0,100)}${a.body.length>100?'…':''}</div>
+                        <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem">${formatDateShort(a.created_at)}</div>
+                    </div>
+                </div>`).join('');
+        }
+    } catch {}
+});
+</script>
+</body>
+</html>

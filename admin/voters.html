@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Voters</title>
+<meta name="description" content="Manage and verify student voters in the AU E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.filter-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; align-items:center; }
+.filter-btn {
+    padding: .5rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: all .15s;
+}
+.filter-btn:hover { border-color: var(--au-blue); color: var(--au-blue); }
+.filter-btn.active { background: var(--au-blue); color: #fff; border-color: var(--au-blue); }
+.search-box {
+    margin-left: auto;
+    position: relative;
+}
+.search-box .material-symbols-outlined {
+    position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
+    color: var(--text-3); font-size: 1.125rem; pointer-events: none;
+}
+.search-box input {
+    padding: .5rem 1rem .5rem 2.5rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    font-size: .8125rem;
+    width: 16rem;
+    color: var(--text-1);
+    outline: none;
+    font-family: var(--font-body);
+}
+.search-box input:focus { border-color: var(--au-blue); box-shadow: 0 0 0 3px rgba(0,61,165,.1); }
+.voter-avatar {
+    width:2.25rem; height:2.25rem; border-radius:50%;
+    background:var(--au-blue-light); color:var(--au-blue);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.8125rem; flex-shrink:0;
+}
+.bulk-bar {
+    background: var(--au-blue-light);
+    border: 1px solid var(--au-blue);
+    border-radius: var(--radius);
+    padding: .75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--au-blue);
+}
+.dark .bulk-bar { background: rgba(0,61,165,.15); }
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub">Voter Management</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem">Voter Management</h1>
+                <p class="text-muted text-sm">Verify students and manage voter registrations</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Total Students</div>
+                <div class="stat-value" id="s-total">—</div>
+            </div>
+            <div class="stat-card stat-card--success">
+                <div class="stat-label">Verified</div>
+                <div class="stat-value" id="s-verified">—</div>
+            </div>
+            <div class="stat-card stat-card--danger">
+                <div class="stat-label">Unverified</div>
+                <div class="stat-value" id="s-unverified">—</div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All Students</button>
+            <button class="filter-btn" data-filter="verified">Verified</button>
+            <button class="filter-btn" data-filter="unverified">Unverified</button>
+            <div class="search-box">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="search-input" placeholder="Search by name or matric…"/>
+            </div>
+        </div>
+
+        <!-- Bulk actions bar -->
+        <div class="bulk-bar hidden" id="bulk-bar">
+            <span id="bulk-count">0 selected</span>
+            <button class="btn btn-primary btn-sm" onclick="bulkVerify()">
+                <span class="material-symbols-outlined" style="font-size:1rem">verified_user</span>
+                Verify Selected
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Clear</button>
+        </div>
+
+        <div class="card" style="padding:0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:2.5rem"><input type="checkbox" id="select-all"/></th>
+                            <th>Student</th>
+                            <th>Matric No.</th>
+                            <th>Faculty</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th style="text-align:right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voters-tbody">
+                        <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-3)">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+let allVoters = [];
+let selectedIds = new Set();
+let currentFilter = 'all';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.admin('voters'));
+
+    // Pre-select filter from URL
+    const params = new URLSearchParams(location.search);
+    const filterParam = params.get('filter');
+
+    // Filter buttons
+    document.querySelector('.filter-bar').addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTable();
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', () => renderTable());
+
+    // Select all
+    document.getElementById('select-all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.voter-check');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+            const id = parseInt(cb.dataset.id);
+            if (this.checked) selectedIds.add(id);
+            else selectedIds.delete(id);
+        });
+        updateBulkBar();
+    });
+
+    await loadVoters();
+
+    // Activate filter from URL
+    if (filterParam) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        const target = document.querySelector(`[data-filter="${filterParam}"]`);
+        if (target) { target.classList.add('active'); currentFilter = filterParam; }
+        renderTable();
+    }
+});
+
+async function loadVoters() {
+    try {
+        allVoters = await API.get('/admin/voters/');
+        const verified = allVoters.filter(v => v.is_verified).length;
+        document.getElementById('s-total').textContent = allVoters.length;
+        document.getElementById('s-verified').textContent = verified;
+        document.getElementById('s-unverified').textContent = allVoters.length - verified;
+        renderTable();
+    } catch {
+        Toast.show('Failed to load voters.', 'error');
+    }
+}
+
+function renderTable() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    let filtered = allVoters;
+
+    if (currentFilter === 'verified') filtered = filtered.filter(v => v.is_verified);
+    else if (currentFilter === 'unverified') filtered = filtered.filter(v => !v.is_verified);
+
+    if (search) {
+        filtered = filtered.filter(v =>
+            (v.first_name + ' ' + v.last_name).toLowerCase().includes(search) ||
+            v.matric.toLowerCase().includes(search)
+        );
+    }
+
+    const tbody = document.getElementById('voters-tbody');
+    if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-3)">No voters found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(v => {
+        const initials = ((v.first_name?.[0]||'') + (v.last_name?.[0]||'')).toUpperCase();
+        return `
+        <tr>
+            <td><input type="checkbox" class="voter-check" data-id="${v.id}" ${selectedIds.has(v.id)?'checked':''} onchange="toggleSelection(${v.id}, this.checked)"/></td>
+            <td>
+                <div class="flex items-center gap-3">
+                    <div class="voter-avatar">${initials}</div>
+                    <div>
+                        <div style="font-weight:600">${v.first_name} ${v.last_name}</div>
+                    </div>
+                </div>
+            </td>
+            <td><code style="font-size:.8125rem">${v.matric}</code></td>
+            <td>${v.faculty || '—'}</td>
+            <td>${v.department || '—'}</td>
+            <td>${v.is_verified
+                ? '<span class="badge badge--active">Verified</span>'
+                : '<span class="badge badge--pending">Unverified</span>'}</td>
+            <td style="text-align:right">
+                ${!v.is_verified
+                    ? `<button class="btn btn-primary btn-xs" onclick="verifyVoter(${v.id})">
+                        <span class="material-symbols-outlined" style="font-size:.875rem">verified_user</span> Verify
+                       </button>`
+                    : `<button class="btn btn-ghost btn-xs" disabled>
+                        <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span> Verified
+                       </button>`}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function toggleSelection(id, checked) {
+    if (checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+    updateBulkBar();
+}
+
+function updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    if (selectedIds.size > 0) {
+        bar.classList.remove('hidden');
+        document.getElementById('bulk-count').textContent = `${selectedIds.size} selected`;
+    } else {
+        bar.classList.add('hidden');
+    }
+}
+
+function clearSelection() {
+    selectedIds.clear();
+    document.querySelectorAll('.voter-check').forEach(cb => cb.checked = false);
+    document.getElementById('select-all').checked = false;
+    updateBulkBar();
+}
+
+async function verifyVoter(id) {
+    try {
+        await API.post(`/admin/voters/${id}/verify/`);
+        Toast.show('Voter verified successfully.', 'success');
+        await loadVoters();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to verify voter.', 'error');
+    }
+}
+
+async function bulkVerify() {
+    const ids = [...selectedIds];
+    let success = 0;
+    for (const id of ids) {
+        try {
+            await API.post(`/admin/voters/${id}/verify/`);
+            success++;
+        } catch {}
+    }
+    Toast.show(`${success} voter(s) verified.`, 'success');
+    clearSelection();
+    await loadVoters();
+}
+</script>
+</body>
+</html>

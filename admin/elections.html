@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Elections</title>
+<meta name="description" content="Manage all elections in the Adeleke University E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.filter-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; align-items:center; }
+.filter-btn {
+    padding: .5rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: all .15s;
+}
+.filter-btn:hover { border-color: var(--au-blue); color: var(--au-blue); }
+.filter-btn.active { background: var(--au-blue); color: #fff; border-color: var(--au-blue); }
+.search-box {
+    margin-left: auto;
+    position: relative;
+}
+.search-box .material-symbols-outlined {
+    position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
+    color: var(--text-3); font-size: 1.125rem; pointer-events: none;
+}
+.search-box input {
+    padding: .5rem 1rem .5rem 2.5rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    font-size: .8125rem;
+    width: 16rem;
+    color: var(--text-1);
+    outline: none;
+    font-family: var(--font-body);
+}
+.search-box input:focus { border-color: var(--au-blue); box-shadow: 0 0 0 3px rgba(0,61,165,.1); }
+.election-actions { display:flex; gap:.375rem; }
+.status-dot { width:.5rem; height:.5rem; border-radius:50%; display:inline-block; margin-right:.375rem; }
+.status-dot--active { background:var(--success); }
+.status-dot--draft { background:var(--text-3); }
+.status-dot--completed { background:var(--info); }
+.status-dot--cancelled { background:var(--danger); }
+
+/* Edit modal */
+.modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    backdrop-filter:blur(4px); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:1.5rem;
+}
+.modal {
+    background:var(--surface); border-radius:var(--radius-xl);
+    padding:2rem; max-width:30rem; width:100%;
+    max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg);
+}
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub">Elections Management</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem">Elections</h1>
+                <p class="text-muted text-sm">Create, manage, and monitor all elections</p>
+            </div>
+            <a href="/admin/create-election.html" class="btn btn-primary">
+                <span class="material-symbols-outlined">add</span>
+                New Election
+            </a>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="draft">Draft</button>
+            <button class="filter-btn" data-filter="active">Active</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+            <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+            <div class="search-box">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="search-input" placeholder="Search elections…"/>
+            </div>
+        </div>
+
+        <div class="card" style="padding:0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Election</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Votes</th>
+                            <th>Results</th>
+                            <th style="text-align:right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="elections-tbody">
+                        <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-3)">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Status Change Modal -->
+<div class="modal-overlay hidden" id="status-modal" onclick="if(event.target===this)closeStatusModal()">
+    <div class="modal">
+        <div class="flex items-center justify-between mb-4">
+            <h2 style="font-size:1.25rem">Change Election Status</h2>
+            <button class="icon-btn" onclick="closeStatusModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <p class="text-muted text-sm mb-4" id="status-modal-desc">Select the new status for this election.</p>
+        <div class="flex-col gap-2" id="status-options"></div>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+let allElections = [];
+let currentFilter = 'all';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.admin('elections'));
+
+    // Filter buttons
+    document.querySelector('.filter-bar').addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTable();
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', () => renderTable());
+
+    await loadElections();
+});
+
+async function loadElections() {
+    try {
+        allElections = await API.get('/admin/elections/');
+        renderTable();
+    } catch {
+        Toast.show('Failed to load elections.', 'error');
+    }
+}
+
+function renderTable() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    let filtered = allElections;
+
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(e => e.status === currentFilter);
+    }
+    if (search) {
+        filtered = filtered.filter(e =>
+            e.title.toLowerCase().includes(search) ||
+            e.election_type.toLowerCase().includes(search)
+        );
+    }
+
+    const tbody = document.getElementById('elections-tbody');
+    if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-3)">No elections found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(e => `
+        <tr>
+            <td>
+                <div style="font-weight:600">${e.title}</div>
+                <div style="font-size:.75rem;color:var(--text-3)">${e.description ? e.description.slice(0,50) + '…' : ''}</div>
+            </td>
+            <td><span class="badge badge--blue">${e.election_type}</span></td>
+            <td>${statusBadge(e.status)}</td>
+            <td style="white-space:nowrap">${formatDateShort(e.start_date)}</td>
+            <td style="white-space:nowrap">${formatDateShort(e.end_date)}</td>
+            <td><strong>${e.total_votes || 0}</strong></td>
+            <td>${e.results_published ? '<span class="badge badge--active">Published</span>' : '<span class="badge badge--draft">Private</span>'}</td>
+            <td style="text-align:right">
+                <div class="election-actions">
+                    <button class="btn btn-ghost btn-xs" onclick="openStatusModal(${e.id})" title="Change status">
+                        <span class="material-symbols-outlined" style="font-size:1rem">swap_horiz</span>
+                    </button>
+                    <a href="/admin/results.html?id=${e.id}" class="btn btn-ghost btn-xs" title="Results">
+                        <span class="material-symbols-outlined" style="font-size:1rem">bar_chart</span>
+                    </a>
+                    <button class="btn btn-ghost btn-xs" onclick="deleteElection(${e.id})" title="Delete" style="color:var(--danger)">
+                        <span class="material-symbols-outlined" style="font-size:1rem">delete</span>
+                    </button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+let statusElectionId = null;
+
+function openStatusModal(id) {
+    statusElectionId = id;
+    const e = allElections.find(x => x.id === id);
+    if (!e) return;
+
+    document.getElementById('status-modal-desc').textContent = `Current status: ${e.status.toUpperCase()}. Select new status for "${e.title}".`;
+
+    const statuses = ['draft', 'active', 'completed', 'cancelled'];
+    document.getElementById('status-options').innerHTML = statuses.map(s => `
+        <button class="btn ${s === e.status ? 'btn-primary' : 'btn-outline'} w-full" 
+                ${s === e.status ? 'disabled' : ''}
+                onclick="changeStatus('${s}')">
+            ${statusBadge(s)} 
+            <span style="margin-left:.5rem">${s.charAt(0).toUpperCase() + s.slice(1)}</span>
+        </button>`).join('');
+
+    document.getElementById('status-modal').classList.remove('hidden');
+}
+
+function closeStatusModal() {
+    document.getElementById('status-modal').classList.add('hidden');
+    statusElectionId = null;
+}
+
+async function changeStatus(newStatus) {
+    if (!statusElectionId) return;
+    try {
+        await API.patch(`/admin/elections/${statusElectionId}/`, { status: newStatus });
+        Toast.show(`Election status changed to ${newStatus}.`, 'success');
+        closeStatusModal();
+        await loadElections();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to change status.', 'error');
+    }
+}
+
+async function deleteElection(id) {
+    if (!confirm('Are you sure you want to delete this election? This action cannot be undone.')) return;
+    try {
+        await API.delete(`/admin/elections/${id}/`);
+        Toast.show('Election deleted.', 'info');
+        await loadElections();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to delete election.', 'error');
+    }
+}
+</script>
+</body>
+</html>

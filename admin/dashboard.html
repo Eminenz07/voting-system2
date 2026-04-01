@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Dashboard</title>
+<meta name="description" content="Admin dashboard for the Adeleke University E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(12rem,1fr)); gap:1rem; margin-bottom:2rem; }
+.kpi-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:1.25rem 1.5rem;
+    position:relative;
+    overflow:hidden;
+}
+.kpi-card .icon-bg {
+    position:absolute; right:-1rem; top:-1rem;
+    width:5rem; height:5rem; border-radius:50%;
+    opacity:.08;
+    display:flex;align-items:center;justify-content:center;
+}
+.kpi-val { font-family:var(--font-display); font-size:2.25rem; font-weight:800; line-height:1; }
+.kpi-label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-3); margin-bottom:.5rem; }
+.kpi-sub { font-size:.8125rem; color:var(--text-2); margin-top:.375rem; }
+.kpi--blue  .kpi-val { color:var(--au-blue); } .kpi--blue  .icon-bg { background:var(--au-blue); }
+.kpi--gold  .kpi-val { color:var(--au-gold-dark); } .kpi--gold  .icon-bg { background:var(--au-gold); }
+.kpi--green .kpi-val { color:var(--success); } .kpi--green .icon-bg { background:var(--success); }
+.kpi--red   .kpi-val { color:var(--danger); } .kpi--red   .icon-bg { background:var(--danger); }
+
+.two-col { display:grid; grid-template-columns:1fr 22rem; gap:1.5rem; align-items:start; }
+.election-row {
+    display:flex; align-items:center; gap:1rem;
+    padding:.875rem 1rem; border-bottom:1px solid var(--border);
+}
+.election-row:last-child { border-bottom:none; }
+.election-row-icon {
+    width:2.5rem; height:2.5rem; border-radius:var(--radius);
+    background:var(--au-blue-light); color:var(--au-blue);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.quick-action {
+    display:flex; align-items:center; gap:.875rem;
+    padding:.75rem 1rem; border-radius:var(--radius);
+    cursor:pointer; text-decoration:none; color:var(--text-1);
+    border:1px solid var(--border); background:var(--surface);
+    transition:background .15s,border-color .15s;
+    font-size:.875rem; font-weight:500;
+}
+.quick-action:hover { background:var(--surface-2); border-color:var(--au-blue); color:var(--text-1); text-decoration:none; }
+.quick-action .material-symbols-outlined { color:var(--au-blue); font-size:1.25rem; }
+@media(max-width:900px){ .two-col{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub" id="admin-role-label">Administrator</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <div class="user-chip">
+                <div class="user-chip-avatar" id="avatar">—</div>
+                <span id="admin-name">Loading…</span>
+            </div>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem">Dashboard</h1>
+                <p class="text-muted text-sm" id="dashboard-date">—</p>
+            </div>
+            <a href="/admin/create-election.html" class="btn btn-primary">
+                <span class="material-symbols-outlined">add</span>
+                New Election
+            </a>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpi-grid">
+            <div class="kpi-card kpi--blue">
+                <div class="kpi-label">Total Students</div>
+                <div class="kpi-val" id="k-students">—</div>
+                <div class="kpi-sub" id="k-verified">— verified</div>
+                <div class="icon-bg"><span class="material-symbols-outlined" style="font-size:3rem;color:var(--au-blue)">school</span></div>
+            </div>
+            <div class="kpi-card kpi--gold">
+                <div class="kpi-label">Active Elections</div>
+                <div class="kpi-val" id="k-active">—</div>
+                <div class="kpi-sub" id="k-draft">— draft</div>
+                <div class="icon-bg"><span class="material-symbols-outlined" style="font-size:3rem;color:var(--au-gold)">how_to_vote</span></div>
+            </div>
+            <div class="kpi-card kpi--green">
+                <div class="kpi-label">Total Votes Cast</div>
+                <div class="kpi-val" id="k-votes">—</div>
+                <div class="kpi-sub">Across all elections</div>
+                <div class="icon-bg"><span class="material-symbols-outlined" style="font-size:3rem;color:var(--success)">ballot</span></div>
+            </div>
+            <div class="kpi-card kpi--red">
+                <div class="kpi-label">Pending Nominations</div>
+                <div class="kpi-val" id="k-nominations">—</div>
+                <div class="kpi-sub">Awaiting review</div>
+                <div class="icon-bg"><span class="material-symbols-outlined" style="font-size:3rem;color:var(--danger)">pending_actions</span></div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3>Elections Overview</h3>
+                    <a href="/admin/elections.html" class="btn btn-ghost btn-sm">
+                        Manage all <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                    </a>
+                </div>
+                <div class="card" style="padding:0">
+                    <div id="election-rows">
+                        <div style="padding:2rem;text-align:center;color:var(--text-3)">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-col gap-4">
+                <div>
+                    <h3 class="mb-3">Quick Actions</h3>
+                    <div class="flex-col gap-2">
+                        <a href="/admin/create-election.html" class="quick-action">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            Create New Election
+                        </a>
+                        <a href="/admin/voters.html?filter=unverified" class="quick-action">
+                            <span class="material-symbols-outlined">verified_user</span>
+                            Verify Pending Students
+                            <span class="badge badge--pending" id="unverified-badge" style="margin-left:auto">—</span>
+                        </a>
+                        <a href="/admin/results.html" class="quick-action">
+                            <span class="material-symbols-outlined">bar_chart</span>
+                            View & Publish Results
+                        </a>
+                        <a href="/admin/announcements.html" class="quick-action">
+                            <span class="material-symbols-outlined">campaign</span>
+                            Post Announcement
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" style="margin-bottom:1rem;padding-bottom:.75rem">
+                        <h4>Voter Verification</h4>
+                        <a href="/admin/voters.html" class="btn btn-ghost btn-xs">Details</a>
+                    </div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-muted">Verified</span>
+                        <span style="font-weight:600" id="verif-pct">—%</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="verif-bar" style="width:0%"></div>
+                    </div>
+                    <div class="flex justify-between" style="font-size:.8125rem;color:var(--text-3)">
+                        <span id="verif-verified">— verified</span>
+                        <span id="verif-total">— total</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.admin('dashboard'));
+    document.getElementById('admin-name').textContent = user.first_name || user.full_name;
+    document.getElementById('avatar').textContent = ((user.first_name?.[0]||'')+(user.last_name?.[0]||'')).toUpperCase();
+    document.getElementById('admin-role-label').textContent =
+        user.role === 'faculty_admin' ? `Faculty Admin — ${user.faculty}` : 'University Admin';
+    document.getElementById('dashboard-date').textContent = new Date().toLocaleDateString('en-NG', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+    try {
+        const d = await API.get('/admin/dashboard/');
+
+        document.getElementById('k-students').textContent = d.total_students.toLocaleString();
+        document.getElementById('k-verified').textContent = `${d.verified_students.toLocaleString()} verified`;
+        document.getElementById('k-active').textContent = d.active_elections;
+        document.getElementById('k-draft').textContent = `${d.draft_elections} draft`;
+        document.getElementById('k-votes').textContent = d.total_votes.toLocaleString();
+        document.getElementById('k-nominations').textContent = d.pending_nominations;
+
+        const pct = d.total_students ? Math.round(d.verified_students/d.total_students*100) : 0;
+        document.getElementById('verif-pct').textContent = pct + '%';
+        document.getElementById('verif-bar').style.width = pct + '%';
+        document.getElementById('verif-verified').textContent = `${d.verified_students} verified`;
+        document.getElementById('verif-total').textContent = `${d.total_students} total`;
+        document.getElementById('unverified-badge').textContent = d.total_students - d.verified_students;
+
+        const rows = document.getElementById('election-rows');
+        if (!d.recent_elections?.length) {
+            rows.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-3)">No elections yet. <a href="/admin/create-election.html">Create one</a></div>`;
+        } else {
+            rows.innerHTML = d.recent_elections.map(e => `
+                <div class="election-row">
+                    <div class="election-row-icon">
+                        <span class="material-symbols-outlined">how_to_vote</span>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.title}</div>
+                        <div style="font-size:.8125rem;color:var(--text-3)">${e.total_votes} votes · ${e.election_type}</div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        ${statusBadge(e.status)}
+                        ${!e.results_published && e.status === 'completed' ?
+                            `<a href="/admin/results.html?id=${e.id}" class="btn btn-gold btn-xs">Publish</a>` :
+                            `<a href="/admin/results.html?id=${e.id}" class="btn btn-outline btn-xs">Results</a>`}
+                    </div>
+                </div>`).join('');
+        }
+    } catch (err) {
+        Toast.show('Failed to load dashboard data. Is the backend running?', 'error');
+    }
+});
+</script>
+</body>
+</html>

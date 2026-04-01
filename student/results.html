@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Election Results</title>
+<meta name="description" content="View published election results at Adeleke University."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.page-hero {
+    background: linear-gradient(135deg, var(--au-blue) 0%, var(--au-blue-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem 2rem;
+    color: #fff;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.page-hero::after {
+    content: '';
+    position: absolute;
+    right: -2rem; top: -2rem;
+    width: 10rem; height: 10rem;
+    border-radius: 50%;
+    background: rgba(245,180,0,.08);
+}
+.election-selector {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(18rem,1fr)); gap:1rem; margin-bottom:2rem;
+}
+.election-tile {
+    background:var(--surface); border:2px solid var(--border);
+    border-radius:var(--radius-lg); padding:1.25rem;
+    cursor:pointer; transition:border-color .15s,box-shadow .15s;
+}
+.election-tile:hover { border-color:var(--au-blue); box-shadow:var(--shadow); }
+.election-tile.selected { border-color:var(--au-blue); background:var(--au-blue-light); }
+.dark .election-tile.selected { background:rgba(0,61,165,.15); }
+.results-panel { display:none; }
+.results-panel.visible { display:block; }
+.result-position { margin-bottom: 2rem; }
+.result-position-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    padding: .75rem 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.result-candidate-row {
+    display: flex; align-items: center; gap: 1rem;
+    padding: .75rem 0; border-bottom: 1px solid var(--border);
+}
+.result-candidate-row:last-child { border-bottom: none; }
+.result-candidate-row.winner {
+    background: var(--au-gold-light);
+    border-radius: var(--radius);
+    padding: .75rem 1rem;
+    margin: 0 -.5rem;
+}
+.dark .result-candidate-row.winner { background: rgba(245,180,0,.1); }
+.candidate-avatar-result {
+    width:2.5rem;height:2.5rem;border-radius:50%;
+    background:var(--au-blue-light);color:var(--au-blue);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.9375rem;flex-shrink:0;
+}
+.pending-results {
+    text-align:center; padding:4rem 2rem; color:var(--text-3);
+}
+.pending-results .material-symbols-outlined { font-size:4rem; display:block; margin-bottom:1rem; opacity:.4; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/student/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">Adeleke University</div>
+                <div class="brand-sub">E-Voting System</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()" title="Toggle dark mode">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <div class="user-chip">
+                <div class="user-chip-avatar" id="avatar-initials">—</div>
+                <span id="user-name-chip">Loading…</span>
+            </div>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="page-hero">
+            <div style="position:relative;z-index:1">
+                <h1 style="color:#fff;font-size:1.625rem;margin-bottom:.25rem">Election Results</h1>
+                <p style="opacity:.8;font-size:.9375rem">View published results from completed elections</p>
+            </div>
+        </div>
+
+        <h3 class="mb-3">Select an Election</h3>
+        <div class="election-selector" id="election-tiles">
+            <div class="card" style="text-align:center;padding:2rem;color:var(--text-3)">Loading elections…</div>
+        </div>
+
+        <div class="results-panel" id="results-panel">
+            <div class="stat-grid mb-6">
+                <div class="stat-card">
+                    <div class="stat-label">Total Votes</div>
+                    <div class="stat-value" id="r-total">—</div>
+                    <div class="stat-sub">Ballots cast</div>
+                </div>
+                <div class="stat-card stat-card--success">
+                    <div class="stat-label">Turnout</div>
+                    <div class="stat-value" id="r-turnout">—%</div>
+                    <div class="stat-sub" id="r-eligible">of — eligible</div>
+                </div>
+                <div class="stat-card stat-card--gold">
+                    <div class="stat-label">Positions</div>
+                    <div class="stat-value" id="r-positions">—</div>
+                    <div class="stat-sub">Contested</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Results Breakdown</h3>
+                </div>
+                <div id="results-body">
+                    <div style="padding:2rem;text-align:center;color:var(--text-3)">Select an election above</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireStudent();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.student('results'));
+    document.getElementById('user-name-chip').textContent = user.full_name || user.first_name;
+    const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || '?';
+    document.getElementById('avatar-initials').textContent = initials;
+
+    const params = new URLSearchParams(location.search);
+    const preId = params.get('id');
+
+    try {
+        const elections = await API.get('/elections/');
+        const completed = elections.filter(e => e.status === 'completed' || e.results_published);
+        const tiles = document.getElementById('election-tiles');
+
+        if (!completed.length) {
+            tiles.innerHTML = `<div class="card" style="text-align:center;padding:2rem;color:var(--text-3)">No completed elections yet.</div>`;
+            return;
+        }
+        tiles.innerHTML = completed.map(e => `
+            <div class="election-tile ${preId == e.id ? 'selected' : ''}"
+                 id="tile-${e.id}" onclick="selectElection(${e.id}, ${e.results_published})">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    ${statusBadge(e.status)}
+                    ${e.results_published
+                        ? '<span class="badge badge--active">Published</span>'
+                        : '<span class="badge badge--pending">Results Pending</span>'}
+                </div>
+                <div style="font-weight:700;font-size:.9375rem;margin-bottom:.25rem">${e.title}</div>
+                <div style="font-size:.8125rem;color:var(--text-3)">${formatDateShort(e.end_date)} · ${e.election_type}</div>
+            </div>`).join('');
+
+        if (preId) {
+            const match = completed.find(e => e.id == preId);
+            if (match) selectElection(parseInt(preId), match.results_published);
+        }
+    } catch {
+        Toast.show('Failed to load elections.', 'error');
+    }
+});
+
+async function selectElection(id, isPublished) {
+    document.querySelectorAll('.election-tile').forEach(t => t.classList.remove('selected'));
+    const tile = document.getElementById(`tile-${id}`);
+    if (tile) tile.classList.add('selected');
+
+    const panel = document.getElementById('results-panel');
+    panel.classList.add('visible');
+
+    if (!isPublished) {
+        document.getElementById('results-body').innerHTML = `
+            <div class="pending-results">
+                <span class="material-symbols-outlined">hourglass_empty</span>
+                <h3 style="margin-bottom:.5rem">Results Pending</h3>
+                <p>The results for this election have not been published yet. Check back later.</p>
+            </div>`;
+        document.querySelector('.stat-grid').style.display = 'none';
+        return;
+    }
+
+    document.querySelector('.stat-grid').style.display = '';
+    document.getElementById('results-body').innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-3)">Loading…</div>';
+
+    try {
+        const d = await API.get(`/elections/${id}/results/`);
+
+        document.getElementById('r-total').textContent = d.total_votes.toLocaleString();
+        document.getElementById('r-turnout').textContent = d.turnout + '%';
+        document.getElementById('r-eligible').textContent = `of ${d.eligible_voters.toLocaleString()} eligible`;
+        document.getElementById('r-positions').textContent = d.positions.length;
+
+        const body = document.getElementById('results-body');
+        if (!d.positions.length) {
+            body.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-3)">No results available.</div>';
+            return;
+        }
+
+        body.innerHTML = d.positions.map(pos => {
+            return `
+            <div class="result-position">
+                <div class="result-position-title">
+                    <span>${pos.title}</span>
+                    <span style="font-size:.8125rem;color:var(--text-3);font-weight:400">${pos.total_votes} votes</span>
+                </div>
+                ${pos.candidates.map((c, i) => `
+                    <div class="result-candidate-row ${i===0 && pos.total_votes > 0 ? 'winner' : ''}">
+                        <div class="candidate-avatar-result">${c.name.substring(0,2).toUpperCase()}</div>
+                        <div style="flex:1;min-width:0">
+                            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.375rem">
+                                <span style="font-weight:600">${c.name}</span>
+                                ${c.party ? `<span style="font-size:.75rem;color:var(--text-3)">(${c.party})</span>` : ''}
+                                ${i===0 && pos.total_votes > 0 ? '<span class="badge badge--gold">🏆 Winner</span>' : ''}
+                            </div>
+                            <div class="progress" style="height:.5rem;margin-bottom:.25rem">
+                                <div class="progress-bar ${i===0?'':'progress-bar--gold'}" style="width:${c.percentage}%"></div>
+                            </div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;min-width:5rem">
+                            <div style="font-family:var(--font-display);font-size:1.125rem;font-weight:700">${c.votes.toLocaleString()}</div>
+                            <div style="font-size:.75rem;color:var(--text-3)">${c.percentage}%</div>
+                        </div>
+                    </div>`).join('')}
+            </div>`;
+        }).join('');
+    } catch (err) {
+        Toast.show('Could not load results: ' + err.message, 'error');
+    }
+}
+</script>
+</body>
+</html>

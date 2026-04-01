@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Student Login</title>
+<meta name="description" content="Sign in to the Adeleke University E-Voting System to cast your vote securely."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.login-wrap { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+.login-hero {
+    background: linear-gradient(155deg, #001A5E 0%, #003DA5 55%, #0055C8 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3rem; position:relative; overflow:hidden; color:#fff;
+}
+.hero-pattern {
+    position:absolute; inset:0;
+    background-image:
+        radial-gradient(circle at 20% 80%, rgba(245,180,0,.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 0%, transparent 50%),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.015) 0, rgba(255,255,255,.015) 1px, transparent 0, transparent 50%);
+    background-size: auto, auto, 2.5rem 2.5rem;
+}
+.hero-content { position:relative; z-index:1; text-align:center; max-width:26rem; }
+.hero-logo {
+    width:7rem; height:7rem; border-radius:50%; object-fit:cover;
+    border:4px solid rgba(245,180,0,.7); margin:0 auto 1.75rem;
+    box-shadow:0 0 0 8px rgba(245,180,0,.12);
+}
+.hero-title { font-family:var(--font-display); font-size:2rem; font-weight:800; line-height:1.15; margin-bottom:.75rem; }
+.hero-sub { font-size:1rem; opacity:.8; line-height:1.6; margin-bottom:2rem; }
+.hero-pillars { display:flex; flex-direction:column; gap:.625rem; text-align:left; }
+.pillar { display:flex; align-items:center; gap:.625rem; font-size:.875rem; opacity:.85; }
+.pillar .material-symbols-outlined { font-size:1.125rem; color:var(--au-gold); }
+.login-panel {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3rem 2.5rem; background:var(--bg);
+}
+.login-card { width:100%; max-width:24rem; }
+.login-header { text-align:center; margin-bottom:2rem; }
+.login-logo { width:3.5rem; height:3.5rem; border-radius:50%; object-fit:cover; margin:0 auto .75rem; border:2px solid var(--au-gold); }
+.divider { display:flex; align-items:center; gap:.75rem; margin:1.25rem 0; color:var(--text-3); font-size:.8125rem; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+@media(max-width:900px){ .login-wrap{grid-template-columns:1fr;} .login-hero{display:none;} }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+    <!-- Hero Panel -->
+    <div class="login-hero">
+        <div class="hero-pattern"></div>
+        <div class="hero-content">
+            <img src="/assets/au-logo.png" alt="AU Logo" class="hero-logo" onerror="this.style.display='none'"/>
+            <h1 class="hero-title">Adeleke University<br>E-Voting System</h1>
+            <p class="hero-sub">
+                A secure, transparent platform for democratic student participation.
+                Your vote is your voice.
+            </p>
+            <div class="hero-pillars">
+                <div class="pillar">
+                    <span class="material-symbols-outlined">verified_user</span>
+                    Secure — all votes encrypted end-to-end
+                </div>
+                <div class="pillar">
+                    <span class="material-symbols-outlined">gavel</span>
+                    Transparent — immutable audit trail
+                </div>
+                <div class="pillar">
+                    <span class="material-symbols-outlined">how_to_vote</span>
+                    Democratic — one student, one vote
+                </div>
+                <div class="pillar">
+                    <span class="material-symbols-outlined">smartphone</span>
+                    Accessible — vote from any device
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Panel -->
+    <div class="login-panel">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="/assets/au-logo.png" alt="AU" class="login-logo" onerror="this.style.display='none'"/>
+                <h2 style="font-size:1.5rem;margin-bottom:.25rem;">Welcome back</h2>
+                <p class="text-muted text-sm">Sign in with your matric number to vote</p>
+            </div>
+
+            <form id="login-form" class="flex-col gap-4">
+                <div class="form-group">
+                    <label class="form-label" for="matric">Matriculation Number</label>
+                    <div class="input-group">
+                        <span class="material-symbols-outlined input-icon">badge</span>
+                        <input class="form-input" id="matric" type="text"
+                               placeholder="e.g. 22/CS/001" autocomplete="username"
+                               required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="flex justify-between items-center">
+                        <label class="form-label" for="password">Password</label>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-symbols-outlined input-icon">lock</span>
+                        <input class="form-input" id="password" type="password"
+                               placeholder="Your password" autocomplete="current-password"
+                               required style="padding-right:2.75rem"/>
+                        <button type="button" id="toggle-pw" class="icon-btn"
+                                style="position:absolute;right:.25rem">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem">visibility</span>
+                        </button>
+                    </div>
+                    <p id="login-error" class="form-error"></p>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn">
+                    <span class="material-symbols-outlined">login</span>
+                    Sign In
+                </button>
+            </form>
+
+            <div class="divider">or</div>
+
+            <div class="text-center" style="font-size:.875rem;color:var(--text-2);">
+                New student?
+                <a href="/student/signup.html" style="font-weight:600">Create an account</a>
+            </div>
+
+            <div class="text-center mt-6" style="font-size:.8125rem;color:var(--text-3);">
+                Are you an administrator?
+                <a href="/admin/login.html" style="color:var(--au-blue);">Admin portal →</a>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 mt-6"
+                 style="font-size:.75rem;color:var(--text-3);">
+                <span class="material-symbols-outlined" style="font-size:1rem;color:var(--success)">lock</span>
+                SSL encrypted · Adeleke University © 2026
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const s = Auth.getSession();
+    if (s?.role === 'student') { window.location.href = '/student/dashboard.html'; return; }
+    if (s?.role === 'uni_admin' || s?.role === 'faculty_admin') { window.location.href = '/admin/dashboard.html'; return; }
+
+    document.getElementById('toggle-pw').addEventListener('click', function() {
+        const pw = document.getElementById('password');
+        const icon = this.querySelector('.material-symbols-outlined');
+        if (pw.type === 'password') { pw.type = 'text'; icon.textContent = 'visibility_off'; }
+        else { pw.type = 'password'; icon.textContent = 'visibility'; }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('login-btn');
+        const errEl = document.getElementById('login-error');
+        const matric = document.getElementById('matric').value.trim();
+        const password = document.getElementById('password').value;
+
+        errEl.classList.remove('visible');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Signing in…';
+
+        try {
+            const data = await API.post('/auth/login/', { matric, password });
+            Auth.setSession(data.user, data.token);
+            Toast.show(`Welcome back, ${data.user.first_name}!`, 'success');
+
+            if (data.user.role === 'student') {
+                setTimeout(() => window.location.href = '/student/dashboard.html', 600);
+            } else {
+                setTimeout(() => window.location.href = '/admin/dashboard.html', 600);
+            }
+        } catch (err) {
+            errEl.textContent = err.message || 'Login failed. Check your credentials.';
+            errEl.classList.add('visible');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">login</span> Sign In';
+        }
+    });
+});
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

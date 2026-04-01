@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Create Account</title>
+<meta name="description" content="Register for the Adeleke University E-Voting System to participate in elections."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.login-wrap { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+.login-hero {
+    background: linear-gradient(155deg, #001A5E 0%, #003DA5 55%, #0055C8 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3rem; position:relative; overflow:hidden; color:#fff;
+}
+.hero-pattern {
+    position:absolute; inset:0;
+    background-image:
+        radial-gradient(circle at 20% 80%, rgba(245,180,0,.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 0%, transparent 50%),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.015) 0, rgba(255,255,255,.015) 1px, transparent 0, transparent 50%);
+    background-size: auto, auto, 2.5rem 2.5rem;
+}
+.hero-content { position:relative; z-index:1; text-align:center; max-width:26rem; }
+.hero-logo {
+    width:7rem; height:7rem; border-radius:50%; object-fit:cover;
+    border:4px solid rgba(245,180,0,.7); margin:0 auto 1.75rem;
+    box-shadow:0 0 0 8px rgba(245,180,0,.12);
+}
+.hero-title { font-family:var(--font-display); font-size:2rem; font-weight:800; line-height:1.15; margin-bottom:.75rem; }
+.hero-sub { font-size:1rem; opacity:.8; line-height:1.6; margin-bottom:2rem; }
+.step-list { display:flex; flex-direction:column; gap:.875rem; text-align:left; }
+.step-item { display:flex; align-items:center; gap:.75rem; font-size:.9375rem; opacity:.9; }
+.step-num {
+    width:2rem;height:2rem;border-radius:50%;
+    background:rgba(245,180,0,.2);color:var(--au-gold);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;font-size:.875rem;flex-shrink:0;
+}
+.login-panel {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:2rem 2.5rem; background:var(--bg); overflow-y:auto;
+}
+.login-card { width:100%; max-width:26rem; }
+.login-header { text-align:center; margin-bottom:1.75rem; }
+.login-logo { width:3.5rem; height:3.5rem; border-radius:50%; object-fit:cover; margin:0 auto .75rem; border:2px solid var(--au-gold); }
+.name-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.pw-strength { height:4px; border-radius:2px; background:var(--border); margin-top:.375rem; overflow:hidden; }
+.pw-strength-bar { height:100%; border-radius:2px; transition:width .3s, background .3s; }
+@media(max-width:900px){ .login-wrap{grid-template-columns:1fr;} .login-hero{display:none;} }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+    <!-- Hero Panel -->
+    <div class="login-hero">
+        <div class="hero-pattern"></div>
+        <div class="hero-content">
+            <img src="/assets/au-logo.png" alt="AU Logo" class="hero-logo" onerror="this.style.display='none'"/>
+            <h1 class="hero-title">Join AU<br>E-Voting</h1>
+            <p class="hero-sub">
+                Register to participate in student elections. The process takes less than a minute.
+            </p>
+            <div class="step-list">
+                <div class="step-item">
+                    <div class="step-num">1</div>
+                    Fill in your personal details and matric number
+                </div>
+                <div class="step-item">
+                    <div class="step-num">2</div>
+                    Create a secure password for your account
+                </div>
+                <div class="step-item">
+                    <div class="step-num">3</div>
+                    Wait for admin verification to unlock voting
+                </div>
+                <div class="step-item">
+                    <div class="step-num">4</div>
+                    Cast your vote in active elections!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Panel -->
+    <div class="login-panel">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="/assets/au-logo.png" alt="AU" class="login-logo" onerror="this.style.display='none'"/>
+                <h2 style="font-size:1.5rem;margin-bottom:.25rem;">Create your account</h2>
+                <p class="text-muted text-sm">Register with your matric number to get started</p>
+            </div>
+
+            <form id="signup-form" class="flex-col gap-4">
+                <div class="name-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">First Name <span class="req">*</span></label>
+                        <input class="form-input" id="first_name" type="text" placeholder="Ade" required/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name <span class="req">*</span></label>
+                        <input class="form-input" id="last_name" type="text" placeholder="Johnson" required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="matric">Matriculation Number <span class="req">*</span></label>
+                    <div class="input-group">
+                        <span class="material-symbols-outlined input-icon">badge</span>
+                        <input class="form-input" id="matric" type="text" placeholder="e.g. 22/CS/001" required/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="faculty">Faculty <span class="req">*</span></label>
+                    <select class="form-select" id="faculty" required>
+                        <option value="">Select your faculty</option>
+                        <option value="Sciences">Sciences</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Social Sciences">Social Sciences</option>
+                        <option value="Law">Law</option>
+                        <option value="Medicine">Medicine</option>
+                        <option value="Education">Education</option>
+                        <option value="Management Sciences">Management Sciences</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="department">Department <span class="req">*</span></label>
+                    <input class="form-input" id="department" type="text" placeholder="e.g. Computer Science" required/>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password <span class="req">*</span></label>
+                    <div class="input-group">
+                        <span class="material-symbols-outlined input-icon">lock</span>
+                        <input class="form-input" id="password" type="password"
+                               placeholder="Minimum 8 characters" minlength="8"
+                               required style="padding-right:2.75rem"/>
+                        <button type="button" id="toggle-pw" class="icon-btn"
+                                style="position:absolute;right:.25rem">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem">visibility</span>
+                        </button>
+                    </div>
+                    <div class="pw-strength">
+                        <div class="pw-strength-bar" id="pw-bar" style="width:0%"></div>
+                    </div>
+                    <p class="form-hint" id="pw-hint">Must be at least 8 characters</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password2">Confirm Password <span class="req">*</span></label>
+                    <div class="input-group">
+                        <span class="material-symbols-outlined input-icon">lock</span>
+                        <input class="form-input" id="password2" type="password"
+                               placeholder="Re-enter your password" minlength="8" required/>
+                    </div>
+                </div>
+
+                <p id="signup-error" class="form-error"></p>
+
+                <button type="submit" class="btn btn-primary w-full btn-lg" id="signup-btn">
+                    <span class="material-symbols-outlined">person_add</span>
+                    Create Account
+                </button>
+            </form>
+
+            <div class="text-center mt-4" style="font-size:.875rem;color:var(--text-2);">
+                Already have an account?
+                <a href="/student/login.html" style="font-weight:600">Sign in</a>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 mt-6"
+                 style="font-size:.75rem;color:var(--text-3);">
+                <span class="material-symbols-outlined" style="font-size:1rem;color:var(--success)">lock</span>
+                SSL encrypted · Adeleke University © 2026
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Redirect if already logged in
+    const s = Auth.getSession();
+    if (s?.role === 'student') { window.location.href = '/student/dashboard.html'; return; }
+
+    // Password toggle
+    document.getElementById('toggle-pw').addEventListener('click', function() {
+        const pw = document.getElementById('password');
+        const icon = this.querySelector('.material-symbols-outlined');
+        pw.type = pw.type === 'password' ? 'text' : 'password';
+        icon.textContent = pw.type === 'password' ? 'visibility' : 'visibility_off';
+    });
+
+    // Password strength
+    document.getElementById('password').addEventListener('input', function() {
+        const val = this.value;
+        const bar = document.getElementById('pw-bar');
+        const hint = document.getElementById('pw-hint');
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (val.length >= 12) score++;
+        if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const pct = Math.min(score * 20, 100);
+        const colors = ['var(--danger)', 'var(--danger)', 'var(--warning)', 'var(--au-gold)', 'var(--success)'];
+        const labels = ['Very weak', 'Weak', 'Fair', 'Good', 'Strong'];
+        bar.style.width = pct + '%';
+        bar.style.background = colors[Math.min(score, 4)];
+        hint.textContent = val.length === 0 ? 'Must be at least 8 characters' : labels[Math.min(score, 4)];
+    });
+
+    // Submit
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('signup-btn');
+        const errEl = document.getElementById('signup-error');
+
+        const data = {
+            first_name: document.getElementById('first_name').value.trim(),
+            last_name: document.getElementById('last_name').value.trim(),
+            matric: document.getElementById('matric').value.trim(),
+            faculty: document.getElementById('faculty').value,
+            department: document.getElementById('department').value.trim(),
+            password: document.getElementById('password').value,
+        };
+        const pw2 = document.getElementById('password2').value;
+
+        errEl.classList.remove('visible');
+
+        if (data.password !== pw2) {
+            errEl.textContent = 'Passwords do not match.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Creating…';
+
+        try {
+            await API.post('/auth/register/', data);
+            Toast.show('Account created! Please sign in.', 'success');
+            setTimeout(() => window.location.href = '/student/login.html', 1200);
+        } catch (err) {
+            errEl.textContent = err.message || 'Registration failed. Please try again.';
+            errEl.classList.add('visible');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">person_add</span> Create Account';
+        }
+    });
+});
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Create Election</title>
+<meta name="description" content="Create a new election in the Adeleke University E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+.wizard-step {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--text-3);
+    transition: color .2s;
+}
+.wizard-step.active { color: var(--au-blue); }
+.wizard-step.done { color: var(--success); }
+.wizard-step-num {
+    width: 2rem; height: 2rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: .875rem;
+    background: var(--border);
+    color: var(--text-3);
+    transition: all .2s;
+}
+.wizard-step.active .wizard-step-num { background: var(--au-blue); color: #fff; }
+.wizard-step.done .wizard-step-num { background: var(--success); color: #fff; }
+.wizard-connector { width: 3rem; height: 2px; background: var(--border); }
+
+.wizard-panel { display: none; }
+.wizard-panel.active { display: block; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* Position builder */
+.position-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: .5rem;
+}
+.position-item .drag-handle {
+    cursor: grab; color: var(--text-3);
+}
+
+/* Candidate builder */
+.candidate-mini {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .625rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: .375rem;
+    font-size: .875rem;
+}
+.candidate-mini-avatar {
+    width: 2rem; height: 2rem;
+    border-radius: 50%;
+    background: var(--au-blue-light);
+    color: var(--au-blue);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .75rem; flex-shrink: 0;
+}
+.add-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--au-blue);
+    font-size: .875rem;
+    font-weight: 600;
+    transition: border-color .15s, background .15s;
+}
+.add-row:hover { border-color: var(--au-blue); background: var(--au-blue-light); }
+
+/* Candidate form modal */
+.modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    backdrop-filter:blur(4px); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:1.5rem;
+}
+.modal {
+    background:var(--surface); border-radius:var(--radius-xl);
+    padding:2rem; max-width:28rem; width:100%;
+    max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg);
+}
+.hidden { display:none !important; }
+
+/* Summary cards */
+.summary-section { margin-bottom: 1.5rem; }
+.summary-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin-bottom: .5rem; }
+.summary-value { font-weight: 600; font-size: .9375rem; margin-bottom: .25rem; }
+@media(max-width:560px){ .form-row{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub">Create Election</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="/admin/elections.html" class="icon-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem">Create New Election</h1>
+                <p class="text-muted text-sm">Set up election details, positions, and candidates</p>
+            </div>
+        </div>
+
+        <!-- Wizard Progress -->
+        <div class="wizard-progress">
+            <div class="wizard-step active" id="ws-1">
+                <div class="wizard-step-num">1</div>
+                <span>Details</span>
+            </div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step" id="ws-2">
+                <div class="wizard-step-num">2</div>
+                <span>Positions</span>
+            </div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step" id="ws-3">
+                <div class="wizard-step-num">3</div>
+                <span>Candidates</span>
+            </div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step" id="ws-4">
+                <div class="wizard-step-num">4</div>
+                <span>Review</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Election Details -->
+        <div class="wizard-panel active" id="panel-1">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Election Details</h3></div>
+                <form id="details-form" class="flex-col gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="e-title">Election Title <span class="req">*</span></label>
+                        <input class="form-input" id="e-title" type="text" placeholder="e.g. 2026 SUG Presidential Election" required/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="e-desc">Description</label>
+                        <textarea class="form-textarea" id="e-desc" placeholder="Brief description of this election…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="e-type">Election Type <span class="req">*</span></label>
+                        <select class="form-select" id="e-type" required>
+                            <option value="university">University-wide</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="departmental">Departmental</option>
+                        </select>
+                    </div>
+                    <div id="scope-fields" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="e-faculty">Faculty Scope</label>
+                                <select class="form-select" id="e-faculty">
+                                    <option value="">Select faculty</option>
+                                    <option>Sciences</option>
+                                    <option>Engineering</option>
+                                    <option>Arts</option>
+                                    <option>Social Sciences</option>
+                                    <option>Law</option>
+                                    <option>Medicine</option>
+                                    <option>Education</option>
+                                    <option>Management Sciences</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="dept-scope-group" style="display:none">
+                                <label class="form-label" for="e-dept">Department Scope</label>
+                                <input class="form-input" id="e-dept" type="text" placeholder="e.g. Computer Science"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="e-start">Start Date & Time <span class="req">*</span></label>
+                            <input class="form-input" id="e-start" type="datetime-local" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="e-end">End Date & Time <span class="req">*</span></label>
+                            <input class="form-input" id="e-end" type="datetime-local" required/>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <span></span>
+                        <button type="submit" class="btn btn-primary">
+                            Next: Positions <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Step 2: Positions -->
+        <div class="wizard-panel" id="panel-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Positions</h3>
+                    <span class="text-sm text-muted">Add the positions voters will elect</span>
+                </div>
+                <div id="positions-list" class="mb-4"></div>
+                <div class="add-row" onclick="addPosition()">
+                    <span class="material-symbols-outlined">add</span>
+                    Add Position
+                </div>
+                <p id="pos-error" class="form-error mt-2"></p>
+                <div class="flex justify-between mt-4">
+                    <button class="btn btn-outline" onclick="goToStep(1)">
+                        <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="validatePositions()">
+                        Next: Candidates <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Candidates -->
+        <div class="wizard-panel" id="panel-3">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Candidates</h3>
+                    <span class="text-sm text-muted">Add candidates for each position</span>
+                </div>
+                <div id="candidates-sections"></div>
+                <p id="cand-error" class="form-error mt-2"></p>
+                <div class="flex justify-between mt-4">
+                    <button class="btn btn-outline" onclick="goToStep(2)">
+                        <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="validateCandidates()">
+                        Next: Review <span class="material-symbols-outlined" style="font-size:1rem">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Review -->
+        <div class="wizard-panel" id="panel-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Review & Create</h3>
+                    <span class="text-sm text-muted">Verify everything before creating</span>
+                </div>
+                <div id="review-summary"></div>
+                <div class="flex justify-between mt-4">
+                    <button class="btn btn-outline" onclick="goToStep(3)">
+                        <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span> Back
+                    </button>
+                    <button class="btn btn-primary btn-lg" id="create-btn" onclick="createElection()">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        Create Election (Draft)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Candidate Modal -->
+<div class="modal-overlay hidden" id="cand-modal" onclick="if(event.target===this)closeCandModal()">
+    <div class="modal">
+        <div class="flex items-center justify-between mb-4">
+            <h2 style="font-size:1.25rem">Add Candidate</h2>
+            <button class="icon-btn" onclick="closeCandModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form id="cand-form" class="flex-col gap-4">
+            <input type="hidden" id="cand-pos-idx"/>
+            <div class="form-group">
+                <label class="form-label" for="c-name">Candidate Name <span class="req">*</span></label>
+                <input class="form-input" id="c-name" type="text" required placeholder="Full name"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-party">Party / Affiliation</label>
+                <input class="form-input" id="c-party" type="text" placeholder="e.g. Progressive Students Alliance"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-bio">Bio</label>
+                <textarea class="form-textarea" id="c-bio" maxlength="500" placeholder="Brief bio (max 500 chars)"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-photo">Photo URL</label>
+                <input class="form-input" id="c-photo" type="url" placeholder="https://…"/>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end">
+                <button type="button" class="btn btn-outline" onclick="closeCandModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Candidate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+let electionData = {};
+let positions = []; // [{title, order, candidates: [{name, party, bio, photo_url}]}]
+
+document.addEventListener('DOMContentLoaded', () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+    document.getElementById('sidebar').appendChild(Nav.admin('elections'));
+
+    // Election type toggle scope fields
+    document.getElementById('e-type').addEventListener('change', function() {
+        const scope = document.getElementById('scope-fields');
+        const dept = document.getElementById('dept-scope-group');
+        if (this.value === 'university') {
+            scope.classList.add('hidden');
+        } else {
+            scope.classList.remove('hidden');
+            dept.style.display = this.value === 'departmental' ? '' : 'none';
+        }
+    });
+
+    // Step 1 form
+    document.getElementById('details-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        electionData = {
+            title: document.getElementById('e-title').value.trim(),
+            description: document.getElementById('e-desc').value.trim(),
+            election_type: document.getElementById('e-type').value,
+            faculty_scope: document.getElementById('e-faculty').value,
+            department_scope: document.getElementById('e-dept').value.trim(),
+            start_date: document.getElementById('e-start').value,
+            end_date: document.getElementById('e-end').value,
+        };
+        goToStep(2);
+    });
+
+    // Candidate modal form
+    document.getElementById('cand-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const posIdx = parseInt(document.getElementById('cand-pos-idx').value);
+        positions[posIdx].candidates.push({
+            name: document.getElementById('c-name').value.trim(),
+            party: document.getElementById('c-party').value.trim(),
+            bio: document.getElementById('c-bio').value.trim(),
+            photo_url: document.getElementById('c-photo').value.trim(),
+        });
+        closeCandModal();
+        renderCandidates();
+    });
+});
+
+function goToStep(step) {
+    document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${step}`).classList.add('active');
+
+    for (let i = 1; i <= 4; i++) {
+        const ws = document.getElementById(`ws-${i}`);
+        ws.classList.remove('active', 'done');
+        if (i < step) ws.classList.add('done');
+        else if (i === step) ws.classList.add('active');
+    }
+
+    if (step === 3) renderCandidates();
+    if (step === 4) renderReview();
+}
+
+// Positions
+function addPosition() {
+    const title = prompt('Position title (e.g. President, Secretary):');
+    if (!title || !title.trim()) return;
+    positions.push({ title: title.trim(), order: positions.length + 1, candidates: [] });
+    renderPositions();
+}
+
+function renderPositions() {
+    const list = document.getElementById('positions-list');
+    if (!positions.length) {
+        list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-3);font-size:.875rem">No positions added yet.</div>';
+        return;
+    }
+    list.innerHTML = positions.map((p, i) => `
+        <div class="position-item">
+            <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+            <div style="flex:1">
+                <div style="font-weight:600">${p.title}</div>
+                <div style="font-size:.75rem;color:var(--text-3)">${p.candidates.length} candidate(s)</div>
+            </div>
+            <button class="icon-btn" onclick="removePosition(${i})" title="Remove">
+                <span class="material-symbols-outlined" style="font-size:1rem;color:var(--danger)">close</span>
+            </button>
+        </div>`).join('');
+}
+
+function removePosition(idx) {
+    positions.splice(idx, 1);
+    renderPositions();
+}
+
+function validatePositions() {
+    const err = document.getElementById('pos-error');
+    if (!positions.length) {
+        err.textContent = 'Add at least one position.';
+        err.classList.add('visible');
+        return;
+    }
+    err.classList.remove('visible');
+    goToStep(3);
+}
+
+// Candidates
+function renderCandidates() {
+    const container = document.getElementById('candidates-sections');
+    container.innerHTML = positions.map((pos, idx) => `
+        <div style="margin-bottom:1.5rem">
+            <h4 style="margin-bottom:.75rem">
+                <span class="badge badge--blue" style="margin-right:.5rem">${idx+1}</span>
+                ${pos.title}
+                <span style="font-size:.8125rem;color:var(--text-3);font-weight:400;margin-left:.5rem">(${pos.candidates.length} candidate${pos.candidates.length!==1?'s':''})</span>
+            </h4>
+            ${pos.candidates.map((c, ci) => `
+                <div class="candidate-mini">
+                    <div class="candidate-mini-avatar">${c.name.substring(0,2).toUpperCase()}</div>
+                    <div style="flex:1">
+                        <div style="font-weight:600">${c.name}</div>
+                        <div style="font-size:.75rem;color:var(--text-3)">${c.party || 'Independent'}</div>
+                    </div>
+                    <button class="icon-btn" onclick="removeCandidate(${idx},${ci})" title="Remove">
+                        <span class="material-symbols-outlined" style="font-size:1rem;color:var(--danger)">close</span>
+                    </button>
+                </div>`).join('')}
+            <div class="add-row" onclick="openCandModal(${idx})" style="margin-top:.5rem">
+                <span class="material-symbols-outlined" style="font-size:1rem">person_add</span>
+                Add Candidate to ${pos.title}
+            </div>
+        </div>`).join('');
+}
+
+function openCandModal(posIdx) {
+    document.getElementById('cand-pos-idx').value = posIdx;
+    document.getElementById('cand-form').reset();
+    document.getElementById('cand-modal').classList.remove('hidden');
+}
+function closeCandModal() {
+    document.getElementById('cand-modal').classList.add('hidden');
+}
+function removeCandidate(posIdx, candIdx) {
+    positions[posIdx].candidates.splice(candIdx, 1);
+    renderCandidates();
+}
+
+function validateCandidates() {
+    const err = document.getElementById('cand-error');
+    const empty = positions.filter(p => p.candidates.length < 1);
+    if (empty.length) {
+        err.textContent = `Add at least one candidate for: ${empty.map(p=>p.title).join(', ')}`;
+        err.classList.add('visible');
+        return;
+    }
+    err.classList.remove('visible');
+    goToStep(4);
+}
+
+// Review
+function renderReview() {
+    const d = electionData;
+    document.getElementById('review-summary').innerHTML = `
+        <div class="summary-section">
+            <div class="summary-label">Election</div>
+            <div class="summary-value">${d.title}</div>
+            <div style="font-size:.8125rem;color:var(--text-2)">${d.description || 'No description'}</div>
+        </div>
+        <div class="summary-section">
+            <div class="summary-label">Type & Scope</div>
+            <div class="summary-value">${d.election_type}${d.faculty_scope ? ' · ' + d.faculty_scope : ''}${d.department_scope ? ' · ' + d.department_scope : ''}</div>
+        </div>
+        <div class="summary-section">
+            <div class="summary-label">Timeline</div>
+            <div class="summary-value">${formatDate(d.start_date)} → ${formatDate(d.end_date)}</div>
+        </div>
+        <div class="summary-section">
+            <div class="summary-label">Positions & Candidates</div>
+            ${positions.map(p => `
+                <div style="margin-bottom:.75rem">
+                    <div style="font-weight:600;margin-bottom:.25rem">${p.title}</div>
+                    ${p.candidates.map(c => `
+                        <div class="candidate-mini">
+                            <div class="candidate-mini-avatar">${c.name.substring(0,2).toUpperCase()}</div>
+                            <div style="flex:1">
+                                <span style="font-weight:600">${c.name}</span>
+                                <span style="color:var(--text-3);font-size:.8125rem;margin-left:.25rem">${c.party || 'Independent'}</span>
+                            </div>
+                        </div>`).join('')}
+                </div>`).join('')}
+        </div>
+    `;
+}
+
+async function createElection() {
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Creating…';
+
+    try {
+        // 1. Create the election
+        const payload = {
+            title: electionData.title,
+            description: electionData.description,
+            election_type: electionData.election_type,
+            start_date: new Date(electionData.start_date).toISOString(),
+            end_date: new Date(electionData.end_date).toISOString(),
+            status: 'draft',
+        };
+        if (electionData.faculty_scope) payload.faculty_scope = electionData.faculty_scope;
+        if (electionData.department_scope) payload.department_scope = electionData.department_scope;
+
+        const election = await API.post('/admin/elections/', payload);
+
+        // 2. Create positions with candidates
+        for (const pos of positions) {
+            const posData = await API.post(`/admin/elections/${election.id}/positions/`, {
+                title: pos.title,
+                order: pos.order,
+            });
+
+            for (const cand of pos.candidates) {
+                await API.post(`/admin/elections/${election.id}/positions/${posData.id}/candidates/`, {
+                    name: cand.name,
+                    party: cand.party || '',
+                    bio: cand.bio || '',
+                    photo_url: cand.photo_url || '',
+                    status: 'approved',
+                });
+            }
+        }
+
+        Toast.show('Election created successfully!', 'success');
+        setTimeout(() => window.location.href = '/admin/elections.html', 1000);
+    } catch (err) {
+        Toast.show(err.message || 'Failed to create election.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Create Election (Draft)';
+    }
+}
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

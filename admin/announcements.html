@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Announcements</title>
+<meta name="description" content="Post and manage announcements for the AU E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.ann-grid { display: grid; grid-template-columns: 1fr 24rem; gap: 1.5rem; align-items: start; }
+.ann-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+    transition: background .15s;
+}
+.ann-item:last-child { border-bottom: none; }
+.ann-item:hover { background: var(--surface-2); }
+.ann-icon {
+    width: 2.5rem; height: 2.5rem;
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.ann-icon--urgent { background: var(--danger-bg); color: var(--danger); }
+.ann-icon--normal { background: var(--au-blue-light); color: var(--au-blue); }
+.ann-election-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .125rem .5rem;
+    border-radius: var(--radius-full);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: .75rem;
+    color: var(--text-3);
+}
+.char-count {
+    font-size: .75rem;
+    color: var(--text-3);
+    text-align: right;
+    margin-top: .25rem;
+}
+@media(max-width:900px){ .ann-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub">Announcements</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem">Announcements</h1>
+                <p class="text-muted text-sm">Post news and updates for students</p>
+            </div>
+        </div>
+
+        <div class="ann-grid">
+            <!-- Existing Announcements -->
+            <div>
+                <h3 class="mb-4">Recent Announcements</h3>
+                <div class="card" style="padding:0" id="ann-wrapper">
+                    <div id="ann-list">
+                        <div style="padding:2rem;text-align:center;color:var(--text-3)">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create New -->
+            <div>
+                <h3 class="mb-4">Post New Announcement</h3>
+                <div class="card">
+                    <form id="ann-form" class="flex-col gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="a-title">Title <span class="req">*</span></label>
+                            <input class="form-input" id="a-title" type="text" placeholder="Announcement title" required/>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="a-body">Body <span class="req">*</span></label>
+                            <textarea class="form-textarea" id="a-body" placeholder="Write your announcement…" required maxlength="1000" style="min-height:8rem"></textarea>
+                            <div class="char-count"><span id="body-count">0</span>/1000</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="a-election">Linked Election (optional)</label>
+                            <select class="form-select" id="a-election">
+                                <option value="">General announcement</option>
+                            </select>
+                            <p class="form-hint">Attach this to a specific election, or leave as general.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="a-priority">Priority</label>
+                            <select class="form-select" id="a-priority">
+                                <option value="normal">Normal</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-full" id="post-btn">
+                            <span class="material-symbols-outlined">campaign</span>
+                            Post Announcement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.admin('announcements'));
+
+    // Char counter
+    document.getElementById('a-body').addEventListener('input', function() {
+        document.getElementById('body-count').textContent = this.value.length;
+    });
+
+    // Load elections for dropdown
+    try {
+        const elections = await API.get('/admin/elections/');
+        const sel = document.getElementById('a-election');
+        elections.forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.title;
+            sel.appendChild(opt);
+        });
+    } catch {}
+
+    // Load announcements
+    await loadAnnouncements();
+
+    // Submit form
+    document.getElementById('ann-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('post-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Posting…';
+
+        const payload = {
+            title: document.getElementById('a-title').value.trim(),
+            body: document.getElementById('a-body').value.trim(),
+            priority: document.getElementById('a-priority').value,
+        };
+        const electionId = document.getElementById('a-election').value;
+        if (electionId) payload.election = parseInt(electionId);
+
+        try {
+            await API.post('/admin/announcements/', payload);
+            Toast.show('Announcement posted!', 'success');
+            document.getElementById('ann-form').reset();
+            document.getElementById('body-count').textContent = '0';
+            await loadAnnouncements();
+        } catch (err) {
+            Toast.show(err.message || 'Failed to post announcement.', 'error');
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">campaign</span> Post Announcement';
+    });
+});
+
+async function loadAnnouncements() {
+    try {
+        const anns = await API.get('/announcements/');
+        const list = document.getElementById('ann-list');
+
+        if (!anns.length) {
+            list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-3);font-size:.875rem">No announcements yet. Create your first one!</div>';
+            return;
+        }
+
+        list.innerHTML = anns.map(a => `
+            <div class="ann-item">
+                <div class="ann-icon ann-icon--${a.priority}">
+                    <span class="material-symbols-outlined" style="font-size:1.125rem">${a.priority === 'urgent' ? 'priority_high' : 'campaign'}</span>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span style="font-weight:700;font-size:.9375rem">${a.title}</span>
+                        ${a.priority === 'urgent' ? '<span class="badge badge--urgent">Urgent</span>' : ''}
+                    </div>
+                    <p style="font-size:.8125rem;color:var(--text-2);line-height:1.6;margin-bottom:.5rem">${a.body}</p>
+                    <div class="flex items-center gap-3" style="font-size:.75rem;color:var(--text-3)">
+                        <span>${formatDate(a.created_at)}</span>
+                        ${a.election_title ? `<span class="ann-election-tag"><span class="material-symbols-outlined" style="font-size:.75rem">how_to_vote</span> ${a.election_title}</span>` : ''}
+                    </div>
+                </div>
+            </div>`).join('');
+    } catch {
+        Toast.show('Failed to load announcements.', 'error');
+    }
+}
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

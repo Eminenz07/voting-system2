@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — My Profile</title>
+<meta name="description" content="View and manage your AU E-Voting profile and verification status."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.profile-hero {
+    background: linear-gradient(135deg, var(--au-blue) 0%, var(--au-blue-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 2rem 2.5rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.profile-hero::after {
+    content: '';
+    position: absolute;
+    right: -2rem; bottom: -2rem;
+    width: 10rem; height: 10rem;
+    border-radius: 50%;
+    background: rgba(245,180,0,.08);
+}
+.profile-avatar {
+    width: 5rem; height: 5rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    border: 3px solid rgba(245,180,0,.5);
+}
+.profile-grid { display: grid; grid-template-columns: 1fr 22rem; gap: 1.5rem; align-items: start; }
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .875rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { font-size: .8125rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+.info-value { font-weight: 600; font-size: .9375rem; }
+.status-card {
+    text-align: center;
+    padding: 2rem;
+}
+.status-icon {
+    width: 4.5rem; height: 4.5rem;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.status-icon--verified { background: var(--success-bg); color: var(--success); }
+.status-icon--unverified { background: var(--warning-bg); color: var(--warning); }
+@media(max-width:900px){ .profile-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/student/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">Adeleke University</div>
+                <div class="brand-sub">E-Voting System</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()" title="Toggle dark mode">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <div class="user-chip">
+                <div class="user-chip-avatar" id="avatar-initials">—</div>
+                <span id="user-name-chip">Loading…</span>
+            </div>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <!-- Profile Hero -->
+        <div class="profile-hero">
+            <div class="profile-avatar" id="profile-avatar">—</div>
+            <div style="position:relative;z-index:1">
+                <h1 style="color:#fff;font-size:1.5rem;margin-bottom:.25rem" id="profile-name">—</h1>
+                <p style="opacity:.8;font-size:.9375rem" id="profile-matric">—</p>
+                <div class="flex items-center gap-2 mt-2" id="profile-badge-wrap"></div>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <!-- Personal Information -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Personal Information</h3>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">First Name</span>
+                        <span class="info-value" id="info-first">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Name</span>
+                        <span class="info-value" id="info-last">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Matric Number</span>
+                        <span class="info-value" id="info-matric">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Faculty</span>
+                        <span class="info-value" id="info-faculty">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Department</span>
+                        <span class="info-value" id="info-dept">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="info-email">—</span>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div class="card mt-6">
+                    <div class="card-header">
+                        <h3 class="card-title">Change Password</h3>
+                    </div>
+                    <form id="pw-form" class="flex-col gap-4">
+                        <div class="form-group">
+                            <label class="form-label" for="old_password">Current Password</label>
+                            <input class="form-input" id="old_password" type="password" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="new_password">New Password</label>
+                            <input class="form-input" id="new_password" type="password" minlength="8" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="new_password2">Confirm New Password</label>
+                            <input class="form-input" id="new_password2" type="password" minlength="8" required/>
+                        </div>
+                        <p id="pw-error" class="form-error"></p>
+                        <button type="submit" class="btn btn-primary" id="pw-btn">
+                            <span class="material-symbols-outlined">lock_reset</span>
+                            Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Verification Status Sidebar -->
+            <div>
+                <div class="card status-card" id="status-card">
+                    <div class="status-icon" id="status-icon">
+                        <span class="material-symbols-outlined" style="font-size:2.5rem" id="status-icon-glyph">—</span>
+                    </div>
+                    <h3 style="margin-bottom:.5rem" id="status-title">—</h3>
+                    <p class="text-muted text-sm" id="status-desc">—</p>
+                </div>
+
+                <div class="card mt-4" style="padding:1.25rem">
+                    <h4 style="margin-bottom:.75rem">Account Actions</h4>
+                    <button class="btn btn-outline w-full mb-2" onclick="Auth.logout()">
+                        <span class="material-symbols-outlined">logout</span>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireStudent();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.student('profile'));
+    document.getElementById('user-name-chip').textContent = user.full_name || user.first_name;
+    const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || '?';
+    document.getElementById('avatar-initials').textContent = initials;
+    document.getElementById('profile-avatar').textContent = initials;
+
+    // Try fresh data from API
+    let profile = user;
+    try {
+        profile = await API.get('/auth/me/');
+        Auth.setSession(profile, localStorage.getItem('au_token'));
+    } catch {}
+
+    document.getElementById('profile-name').textContent = (profile.first_name || '') + ' ' + (profile.last_name || '');
+    document.getElementById('profile-matric').textContent = profile.matric || '';
+    document.getElementById('info-first').textContent = profile.first_name || '—';
+    document.getElementById('info-last').textContent = profile.last_name || '—';
+    document.getElementById('info-matric').textContent = profile.matric || '—';
+    document.getElementById('info-faculty').textContent = profile.faculty || '—';
+    document.getElementById('info-dept').textContent = profile.department || '—';
+    document.getElementById('info-email').textContent = profile.email || 'Not set';
+
+    // Verification status
+    const icon = document.getElementById('status-icon');
+    const glyph = document.getElementById('status-icon-glyph');
+    if (profile.is_verified) {
+        icon.className = 'status-icon status-icon--verified';
+        glyph.textContent = 'verified';
+        document.getElementById('status-title').textContent = 'Verified';
+        document.getElementById('status-desc').textContent = 'Your account is verified and you can participate in all eligible elections.';
+        document.getElementById('profile-badge-wrap').innerHTML = '<span class="badge badge--active">Verified</span>';
+    } else {
+        icon.className = 'status-icon status-icon--unverified';
+        glyph.textContent = 'pending';
+        document.getElementById('status-title').textContent = 'Not Verified';
+        document.getElementById('status-desc').textContent = 'Your account is pending verification by an administrator. You can browse elections but cannot vote yet.';
+        document.getElementById('profile-badge-wrap').innerHTML = '<span class="badge badge--pending">Unverified</span>';
+    }
+
+    // Password change
+    document.getElementById('pw-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('pw-error');
+        const btn = document.getElementById('pw-btn');
+        const newPw = document.getElementById('new_password').value;
+        const newPw2 = document.getElementById('new_password2').value;
+
+        errEl.classList.remove('visible');
+
+        if (newPw !== newPw2) {
+            errEl.textContent = 'New passwords do not match.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        btn.disabled = true;
+        try {
+            await API.patch('/auth/profile/', {
+                old_password: document.getElementById('old_password').value,
+                new_password: newPw,
+            });
+            Toast.show('Password updated successfully.', 'success');
+            document.getElementById('pw-form').reset();
+        } catch (err) {
+            errEl.textContent = err.message || 'Failed to update password.';
+            errEl.classList.add('visible');
+        }
+        btn.disabled = false;
+    });
+});
+</script>
+</body>
+</html>

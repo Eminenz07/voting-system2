@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Cast Your Vote</title>
+<meta name="description" content="Cast your vote securely in the Adeleke University election."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.ballot-header {
+    background: linear-gradient(135deg, var(--au-blue) 0%, var(--au-blue-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 2rem 2.5rem;
+    color: #fff;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.ballot-header::after {
+    content: '';
+    position: absolute;
+    right: -2rem; bottom: -2rem;
+    width: 10rem; height: 10rem;
+    border-radius: 50%;
+    background: rgba(245,180,0,.08);
+}
+.position-section { margin-bottom: 2.5rem; }
+.position-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: .25rem;
+}
+.position-subtitle { font-size: .875rem; color: var(--text-3); margin-bottom: 1.25rem; }
+.candidates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; }
+.candidate-card {
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    position: relative;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: .75rem;
+}
+.candidate-card:hover { border-color: var(--au-blue); }
+.candidate-card.selected {
+    border-color: var(--au-gold);
+    background: var(--au-gold-light);
+    box-shadow: 0 0 0 3px rgba(245,180,0,.2);
+}
+.dark .candidate-card.selected { background: rgba(245,180,0,.08); }
+.candidate-photo {
+    width: 4.5rem; height: 4.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--au-blue-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--au-blue);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.candidate-photo img { width:100%; height:100%; object-fit:cover; }
+.candidate-check {
+    position: absolute;
+    top: .75rem; right: .75rem;
+    width: 1.5rem; height: 1.5rem;
+    border-radius: 50%;
+    background: var(--au-gold);
+    color: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: .875rem;
+}
+.candidate-card.selected .candidate-check { display: flex; }
+.candidate-name { font-weight: 700; font-size: .9375rem; }
+.candidate-party { font-size: .8125rem; color: var(--text-3); }
+.candidate-bio { font-size: .8125rem; color: var(--text-2); line-height: 1.5; margin-top: .25rem; }
+
+/* Review modal */
+.review-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+}
+.review-modal {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    max-width: 34rem;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+.review-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.review-item:last-child { border-bottom: none; }
+.review-pos { font-size: .75rem; font-weight: 700; text-transform: uppercase; color: var(--text-3); letter-spacing: .06em; }
+.review-name { font-weight: 600; }
+.confirmation-check {
+    display: flex; align-items: center; gap: .75rem;
+    padding: 1rem;
+    background: var(--au-blue-light);
+    border-radius: var(--radius);
+    margin: 1.25rem 0;
+    font-size: .9375rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.confirmation-check input { width: 1.25rem; height: 1.25rem; accent-color: var(--au-blue); cursor: pointer; }
+
+/* Success screen */
+.success-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    padding: 4rem 2rem;
+    min-height: 50vh;
+}
+.success-icon {
+    width: 6rem; height: 6rem;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    animation: fadeUp .5s ease;
+}
+.success-icon .material-symbols-outlined { font-size: 3rem; }
+.receipt-hash {
+    font-family: 'DM Mono', monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .75rem 1.25rem;
+    font-size: .875rem;
+    color: var(--text-2);
+    word-break: break-all;
+    margin: 1rem 0;
+}
+.hidden { display: none !important; }
+.abstain-option {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    color: var(--text-3);
+    font-size: .875rem;
+    font-weight: 500;
+    transition: border-color .15s, color .15s;
+}
+.abstain-option:hover { border-color: var(--text-2); color: var(--text-2); }
+.abstain-option.selected { border-color: var(--warning); color: var(--warning); background: var(--warning-bg); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/student/dashboard.html" class="brand">
+            <img src="/assets/au-logo.png" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">Adeleke University</div>
+                <div class="brand-sub">E-Voting System</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()" title="Toggle dark mode">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <!-- Ballot content -->
+        <div id="ballot-content">
+            <div class="ballot-header">
+                <div style="position:relative;z-index:1">
+                    <a href="/student/elections.html" class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.7);margin-bottom:.75rem;padding-left:0">
+                        <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span> Back to Elections
+                    </a>
+                    <h1 style="color:#fff;font-size:1.625rem;margin-bottom:.25rem" id="election-title">Loading…</h1>
+                    <p style="opacity:.8;font-size:.9375rem" id="election-desc"></p>
+                    <div class="flex items-center gap-4 mt-3" style="font-size:.8125rem;opacity:.75">
+                        <span id="election-scope"></span>
+                        <span id="election-deadline"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Already voted state -->
+            <div id="already-voted" class="hidden">
+                <div class="card" style="text-align:center;padding:3rem">
+                    <span class="material-symbols-outlined" style="font-size:4rem;color:var(--success);display:block;margin-bottom:1rem">task_alt</span>
+                    <h2 style="margin-bottom:.5rem">You've already voted</h2>
+                    <p class="text-muted">Your vote has been recorded securely. You cannot vote again in this election.</p>
+                    <a href="/student/elections.html" class="btn btn-outline mt-4">Back to Elections</a>
+                </div>
+            </div>
+
+            <!-- Ballot positions -->
+            <div id="positions-list"></div>
+
+            <!-- Submit button -->
+            <div id="submit-area" class="hidden" style="text-align:center;margin-top:2rem">
+                <div style="font-size:.875rem;color:var(--text-3);margin-bottom:.75rem" id="selection-summary"></div>
+                <button class="btn btn-primary btn-lg" id="review-btn" onclick="showReview()">
+                    <span class="material-symbols-outlined">checklist</span>
+                    Review & Submit Ballot
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="success-screen" class="success-screen hidden">
+            <div class="success-icon">
+                <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            <h1 style="margin-bottom:.5rem">Vote Submitted!</h1>
+            <p class="text-muted" style="margin-bottom:1rem;max-width:24rem">Your ballot has been securely recorded. Thank you for participating in the democratic process.</p>
+            <div class="receipt-hash" id="receipt-hash"></div>
+            <p style="font-size:.8125rem;color:var(--text-3);margin-bottom:1.5rem">Save this receipt hash for your records</p>
+            <div class="flex gap-3">
+                <a href="/student/dashboard.html" class="btn btn-primary">
+                    <span class="material-symbols-outlined">space_dashboard</span> Dashboard
+                </a>
+                <a href="/student/elections.html" class="btn btn-outline">More Elections</a>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Review Modal -->
+<div class="review-overlay hidden" id="review-overlay" onclick="if(event.target===this)closeReview()">
+    <div class="review-modal">
+        <div class="flex items-center justify-between mb-4">
+            <h2 style="font-size:1.25rem">Review Your Ballot</h2>
+            <button class="icon-btn" onclick="closeReview()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <p class="text-muted text-sm mb-4">Please review your selections before submitting. This action cannot be undone.</p>
+        <div id="review-list"></div>
+        <label class="confirmation-check">
+            <input type="checkbox" id="confirm-check"/>
+            <span>I confirm these are my final choices and understand this cannot be changed.</span>
+        </label>
+        <div class="flex gap-3" style="justify-content:flex-end">
+            <button class="btn btn-outline" onclick="closeReview()">Go Back</button>
+            <button class="btn btn-primary" id="submit-btn" disabled onclick="submitBallot()">
+                <span class="material-symbols-outlined">how_to_vote</span>
+                Cast My Vote
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+let ballotData = null;
+let selections = {}; // positionId -> candidateId | 'abstain'
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireStudent();
+    if (!user) return;
+
+    document.getElementById('sidebar').appendChild(Nav.student('elections'));
+
+    const params = new URLSearchParams(location.search);
+    const electionId = params.get('id');
+    if (!electionId) {
+        window.location.href = '/student/elections.html';
+        return;
+    }
+
+    try {
+        ballotData = await API.get(`/elections/${electionId}/ballot/`);
+        const e = ballotData.election;
+
+        document.getElementById('election-title').textContent = e.title;
+        document.getElementById('election-desc').textContent = e.description || '';
+        document.getElementById('election-scope').textContent =
+            e.election_type === 'university' ? 'University-wide' :
+            e.election_type === 'faculty' ? 'Faculty: ' + e.faculty_scope :
+            'Department: ' + e.department_scope;
+        document.getElementById('election-deadline').textContent = 'Closes: ' + formatDate(e.end_date);
+
+        if (ballotData.has_voted) {
+            document.getElementById('already-voted').classList.remove('hidden');
+            document.getElementById('positions-list').classList.add('hidden');
+            return;
+        }
+
+        renderPositions(ballotData.positions);
+    } catch (err) {
+        Toast.show(err.message || 'Failed to load ballot.', 'error');
+    }
+});
+
+function renderPositions(positions) {
+    const list = document.getElementById('positions-list');
+    list.innerHTML = positions.map((pos, idx) => `
+        <div class="position-section" data-position="${pos.id}">
+            <div class="position-title">
+                <span class="badge badge--blue" style="margin-right:.5rem">${idx + 1}</span>
+                ${pos.title}
+            </div>
+            <div class="position-subtitle">Select one candidate or abstain</div>
+            <div class="candidates-grid">
+                ${pos.candidates.map(c => `
+                    <div class="candidate-card" data-candidate="${c.id}" data-position="${pos.id}" onclick="selectCandidate(${pos.id}, ${c.id})">
+                        <div class="candidate-check">
+                            <span class="material-symbols-outlined" style="font-size:.875rem">check</span>
+                        </div>
+                        <div class="candidate-photo">
+                            ${c.photo_url
+                                ? `<img src="${c.photo_url}" alt="${c.name}"/>`
+                                : c.name.substring(0,2).toUpperCase()}
+                        </div>
+                        <div class="candidate-name">${c.name}</div>
+                        <div class="candidate-party">${c.party || 'Independent'}</div>
+                        ${c.bio ? `<div class="candidate-bio">${c.bio.slice(0,100)}${c.bio.length > 100 ? '…' : ''}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+            <div class="abstain-option mt-3" data-position="${pos.id}" onclick="selectCandidate(${pos.id}, 'abstain')">
+                <span class="material-symbols-outlined" style="font-size:1.25rem">do_not_disturb</span>
+                Abstain from this position
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectCandidate(positionId, candidateId) {
+    selections[positionId] = candidateId;
+
+    // Update visual state
+    document.querySelectorAll(`[data-position="${positionId}"].candidate-card`).forEach(c => {
+        c.classList.toggle('selected', parseInt(c.dataset.candidate) === candidateId);
+    });
+    document.querySelectorAll(`[data-position="${positionId}"].abstain-option`).forEach(a => {
+        a.classList.toggle('selected', candidateId === 'abstain');
+    });
+
+    updateSubmitArea();
+}
+
+function updateSubmitArea() {
+    const total = ballotData.positions.length;
+    const selected = Object.keys(selections).length;
+    const area = document.getElementById('submit-area');
+    const summary = document.getElementById('selection-summary');
+
+    if (selected > 0) {
+        area.classList.remove('hidden');
+        summary.textContent = `${selected} of ${total} position(s) selected`;
+        document.getElementById('review-btn').disabled = selected < total;
+    }
+}
+
+function showReview() {
+    const list = document.getElementById('review-list');
+    list.innerHTML = ballotData.positions.map(pos => {
+        const sel = selections[pos.id];
+        let candidateName = 'Abstained';
+        if (sel !== 'abstain') {
+            const candidate = pos.candidates.find(c => c.id === sel);
+            candidateName = candidate ? candidate.name : 'Unknown';
+        }
+        return `
+            <div class="review-item">
+                <div style="flex:1">
+                    <div class="review-pos">${pos.title}</div>
+                    <div class="review-name">${candidateName}</div>
+                </div>
+                <span class="material-symbols-outlined" style="color:${sel === 'abstain' ? 'var(--warning)' : 'var(--success)'};font-size:1.25rem">
+                    ${sel === 'abstain' ? 'do_not_disturb' : 'check_circle'}
+                </span>
+            </div>`;
+    }).join('');
+
+    document.getElementById('confirm-check').checked = false;
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('review-overlay').classList.remove('hidden');
+
+    document.getElementById('confirm-check').addEventListener('change', function() {
+        document.getElementById('submit-btn').disabled = !this.checked;
+    });
+}
+
+function closeReview() {
+    document.getElementById('review-overlay').classList.add('hidden');
+}
+
+async function submitBallot() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Submitting…';
+
+    const votes = [];
+    for (const pos of ballotData.positions) {
+        const sel = selections[pos.id];
+        if (sel && sel !== 'abstain') {
+            votes.push({ position: pos.id, candidate: sel });
+        }
+    }
+
+    try {
+        const params = new URLSearchParams(location.search);
+        const result = await API.post(`/elections/${params.get('id')}/vote/`, { votes });
+
+        closeReview();
+        document.getElementById('ballot-content').classList.add('hidden');
+        document.getElementById('success-screen').classList.remove('hidden');
+        document.getElementById('receipt-hash').textContent = result.receipt || result.receipt_hash || ('VR-' + Date.now().toString(36).toUpperCase());
+
+        Toast.show('Your vote has been recorded!', 'success');
+    } catch (err) {
+        Toast.show(err.message || 'Failed to submit vote.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">how_to_vote</span> Cast My Vote';
+    }
+}
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>
