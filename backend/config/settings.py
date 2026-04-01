@@ -128,7 +128,10 @@ REST_FRAMEWORK = {
 }
 
 # ── CORS (dev: allow all, prod: restrict) ─────────────────────────────────────
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.getenv('CORS_ALLOWED_ORIGINS') else []
+RAW_CORS = os.getenv('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [
+    org.strip().rstrip('/') for org in RAW_CORS.split(',') if org.strip()
+]
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # ── Default PK field ──────────────────────────────────────────────────────────
