@@ -190,3 +190,56 @@ function statusBadge(status) {
 
 // Auto-init dark mode
 DarkMode.init();
+
+// ── Mobile Menu ───────────────────────────────────────────────────────────────
+const MobileMenu = {
+    init() {
+        const header = document.querySelector('.app-header');
+        const sidebar = document.querySelector('.app-sidebar');
+        if (!header || !sidebar) return;
+        
+        // Add menu button to header
+        if (!document.getElementById('mobile-menu-btn')) {
+            const btn = document.createElement('button');
+            btn.id = 'mobile-menu-btn';
+            btn.className = 'icon-btn header-menu-btn';
+            btn.innerHTML = '<span class="material-symbols-outlined">menu</span>';
+            btn.title = "Toggle sidebar menu";
+            btn.onclick = () => this.toggle();
+            
+            const brand = header.querySelector('.brand');
+            if (brand) header.insertBefore(btn, brand);
+        }
+        
+        // Add overlay to body
+        if (!document.getElementById('sidebar-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.id = 'sidebar-overlay';
+            overlay.className = 'sidebar-overlay';
+            overlay.onclick = () => this.close();
+            document.body.appendChild(overlay);
+        }
+    },
+    toggle() {
+        const sidebar = document.querySelector('.app-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const icon = document.querySelector('#mobile-menu-btn span');
+        if (!sidebar || !overlay) return;
+        
+        const isOpen = sidebar.classList.toggle('sidebar-open');
+        overlay.classList.toggle('open');
+        if (icon) icon.textContent = isOpen ? 'menu_open' : 'menu';
+    },
+    close() {
+        const sidebar = document.querySelector('.app-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const icon = document.querySelector('#mobile-menu-btn span');
+        if (sidebar) sidebar.classList.remove('sidebar-open');
+        if (overlay) overlay.classList.remove('open');
+        if (icon) icon.textContent = 'menu';
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    MobileMenu.init();
+});

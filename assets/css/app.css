@@ -618,9 +618,40 @@ tbody tr:hover { background: var(--surface-2); }
 .hidden { display: none !important; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
+.header-menu-btn { display: none; }
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    top: var(--header-h);
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    display: none;
+    backdrop-filter: blur(2px);
+}
+.sidebar-overlay.open { display: block; animation: fadeUp .2s ease; }
+
 @media (max-width: 900px) {
     .app-shell { grid-template-columns: 1fr; grid-template-rows: var(--header-h) 1fr; }
-    .app-sidebar { display: none; }
+    
+    .app-sidebar {
+        position: fixed;
+        left: -100%;
+        top: var(--header-h);
+        width: 17rem;
+        height: calc(100vh - var(--header-h));
+        z-index: 1000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex !important;
+        box-shadow: none;
+    }
+    .app-sidebar.sidebar-open { 
+        left: 0; 
+        box-shadow: var(--shadow-lg); 
+    }
+    
+    .header-menu-btn { display: flex; }
+
     .app-main { grid-column: 1; padding: 1.25rem; }
     .auth-wrap { grid-template-columns: 1fr; }
     .auth-hero { display: none; }
