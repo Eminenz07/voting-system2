@@ -81,12 +81,6 @@ def student_ballot(request, election_id):
     has_voted = Vote.objects.filter(election=election, voter=request.user).exists()
     positions = election.positions.prefetch_related('candidates').all()
 
-    # Only show approved candidates
-    for pos in positions:
-        pos._prefetched_objects_cache['candidates'] = [
-            c for c in pos.candidates.all() if c.status == 'approved'
-        ]
-
     return Response({
         'election': ElectionListSerializer(election, context={'request': request}).data,
         'positions': [{
@@ -99,7 +93,7 @@ def student_ballot(request, election_id):
                 'party': c.party,
                 'bio': c.bio,
                 'photo_url': c.photo_url,
-            } for c in p.candidates.filter(status='approved')],
+            } for c in p.candidates.all() if c.status == 'approved'],
         } for p in positions],
         'has_voted': has_voted,
     })
