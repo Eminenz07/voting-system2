@@ -106,11 +106,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Frontend files served from parent directory
+# Frontend files served from parent directory (only in dev where assets/ exists)
 FRONTEND_DIR = BASE_DIR.parent
+_assets_dir = FRONTEND_DIR / 'assets'
 STATICFILES_DIRS = [
-    ('assets', FRONTEND_DIR / 'assets'),
-]
+    ('assets', _assets_dir),
+] if _assets_dir.is_dir() else []
 
 # WhiteNoise settings
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
