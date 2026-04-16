@@ -12,7 +12,7 @@ const API = {
     async _call(endpoint, options = {}) {
         const token = localStorage.getItem('au_token');
         const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-        if (token) headers['Authorization'] = `Token ${token}`;
+        if (token && !endpoint.includes('/auth/login/')) headers['Authorization'] = `Token ${token}`;
 
         const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
         const data = await res.json().catch(() => ({}));
