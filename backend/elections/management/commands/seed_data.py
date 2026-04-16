@@ -76,7 +76,7 @@ class Command(BaseCommand):
                 student.set_password('student123')
                 student.save()
 
-        self.stdout.write(self.style.SUCCESS(f'✓ {len(students_data)} students seeded'))
+        self.stdout.write(self.style.SUCCESS(f'OK {len(students_data)} students seeded'))
 
         # ── Create elections ──────────────────────────────────────────────
         now = timezone.now()
@@ -174,7 +174,7 @@ class Command(BaseCommand):
             }
         )
 
-        self.stdout.write(self.style.SUCCESS('✓ 3 elections seeded'))
+        self.stdout.write(self.style.SUCCESS('OK 3 elections seeded'))
 
         # ── Announcements ─────────────────────────────────────────────────
         Announcement.objects.get_or_create(
@@ -204,7 +204,7 @@ class Command(BaseCommand):
             }
         )
 
-        self.stdout.write(self.style.SUCCESS('✓ Announcements seeded'))
+        self.stdout.write(self.style.SUCCESS('OK Announcements seeded'))
 
         # ── Add some votes to completed election ──────────────────────────
         from elections.models import Vote
@@ -218,7 +218,7 @@ class Command(BaseCommand):
                 election=e2, position=pos_rep, candidate=c2, voter=student,
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Sample votes seeded'))
+        self.stdout.write(self.style.SUCCESS('OK Sample votes seeded'))
 
         self.stdout.write('')
         self.stdout.write(self.style.SUCCESS('═══════════════════════════════════════'))
