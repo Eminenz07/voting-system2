@@ -13,7 +13,7 @@ class Command(BaseCommand):
     help = 'Seed the database with demo data for development'
 
     def handle(self, *args, **options):
-        self.stdout.write('Seeding database…')
+        self.stdout.write('Seeding database...')
 
         # ── Create admin user ─────────────────────────────────────────────
         admin, created = User.objects.get_or_create(
@@ -226,9 +226,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('OK Sample votes seeded'))
 
         self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS('═══════════════════════════════════════'))
+        self.stdout.write(self.style.SUCCESS('======================================='))
         self.stdout.write(self.style.SUCCESS('  Database seeded successfully!'))
-        self.stdout.write(self.style.SUCCESS('═══════════════════════════════════════'))
+        self.stdout.write(self.style.SUCCESS('======================================='))
         self.stdout.write('')
         self.stdout.write('  Login credentials:')
         self.stdout.write(f'  Admin:   ADMIN001 / admin123')
