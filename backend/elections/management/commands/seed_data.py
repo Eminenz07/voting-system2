@@ -29,11 +29,16 @@ class Command(BaseCommand):
             }
         )
         if created:
-            admin.set_password('admin123')
-            admin.save()
-            self.stdout.write(self.style.SUCCESS('✓ Admin user created (ADMIN001 / admin123)'))
+            self.stdout.write(self.style.SUCCESS('OK Admin user created (ADMIN001 / admin123)'))
         else:
-            self.stdout.write('  Admin user already exists.')
+            self.stdout.write('  Admin user already exists, ensuring correct config...')
+        # Always ensure correct password and permissions
+        admin.role = 'uni_admin'
+        admin.is_staff = True
+        admin.is_superuser = True
+        admin.is_verified = True
+        admin.set_password('admin123')
+        admin.save()
 
         # ── Create faculty admin ──────────────────────────────────────────
         fac_admin, created = User.objects.get_or_create(
