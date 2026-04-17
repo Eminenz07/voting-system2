@@ -207,11 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Redirect if already logged in as admin
-    const s = Auth.getSession();
-    if (s?.role === 'uni_admin' || s?.role === 'faculty_admin') {
-        window.location.href = '/admin/dashboard.html'; return;
-    }
+    // Clear any stale session so old tokens don't interfere
+    localStorage.removeItem('au_token');
+    localStorage.removeItem('au_user');
 
     // Password toggle
     document.getElementById('toggle-pw').addEventListener('click', function() {
