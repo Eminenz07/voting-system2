@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote — Admin Registration</title>
+<meta name="description" content="Admin registration for the Adeleke University E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.login-wrap { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+.login-hero {
+    background: linear-gradient(155deg, #0A0F1C 0%, #001A5E 55%, #003DA5 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3rem; position:relative; overflow:hidden; color:#fff;
+}
+.hero-pattern {
+    position:absolute; inset:0;
+    background-image:
+        radial-gradient(circle at 30% 70%, rgba(245,180,0,.1) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(255,255,255,.04) 0%, transparent 50%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.01) 0, rgba(255,255,255,.01) 1px, transparent 0, transparent 50%);
+    background-size: auto, auto, 3rem 3rem;
+}
+.hero-content { position:relative; z-index:1; text-align:center; max-width:26rem; }
+.hero-logo {
+    width:7rem; height:7rem; border-radius:50%; object-fit:cover;
+    border:4px solid rgba(245,180,0,.7); margin:0 auto 1.75rem;
+    box-shadow:0 0 0 8px rgba(245,180,0,.12);
+}
+.hero-title { font-family:var(--font-display); font-size:2rem; font-weight:800; line-height:1.15; margin-bottom:.75rem; }
+.hero-sub { font-size:1rem; opacity:.8; line-height:1.6; margin-bottom:2rem; }
+.admin-features { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; text-align:left; }
+.admin-feature {
+    display:flex; align-items:flex-start; gap:.5rem;
+    font-size:.8125rem; opacity:.8; line-height:1.5;
+}
+.admin-feature .material-symbols-outlined { font-size:1.125rem; color:var(--au-gold); margin-top:.125rem; }
+.login-panel {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:2rem 2.5rem; background:var(--bg); overflow-y:auto;
+}
+.login-card { width:100%; max-width:26rem; }
+.login-header { text-align:center; margin-bottom:1.75rem; }
+.login-logo { width:3.5rem; height:3.5rem; border-radius:50%; object-fit:cover; margin:0 auto .75rem; border:2px solid var(--au-gold); }
+.admin-badge {
+    display:inline-flex; align-items:center; gap:.375rem;
+    padding:.375rem .875rem; border-radius:var(--radius-full);
+    background:var(--au-blue-light); color:var(--au-blue);
+    font-size:.75rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; margin:0 auto .75rem;
+}
+.dark .admin-badge { background:rgba(0,61,165,.2); color:#6EA8FF; }
+.name-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.pw-strength { height:4px; border-radius:2px; background:var(--border); margin-top:.375rem; overflow:hidden; }
+.pw-strength-bar { height:100%; border-radius:2px; transition:width .3s, background .3s; }
+.access-denied { text-align:center; padding:4rem 2rem; }
+.access-denied .material-symbols-outlined { font-size:4rem; color:var(--danger); margin-bottom:1rem; }
+@media(max-width:900px){ .login-wrap{grid-template-columns:1fr;} .login-hero{display:none;} }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+    <!-- Hero -->
+    <div class="login-hero">
+        <div class="hero-pattern"></div>
+        <div class="hero-content">
+            <img src="/assets/au-logo.jpg" alt="AU Logo" class="hero-logo" onerror="this.style.display='none'"/>
+            <h1 class="hero-title">Admin<br>Registration</h1>
+            <p class="hero-sub">
+                Create an administrator account to manage elections, verify voters, and oversee the democratic process.
+            </p>
+            <div class="admin-features">
+                <div class="admin-feature">
+                    <span class="material-symbols-outlined">how_to_vote</span>
+                    <span>Create & manage elections across faculties</span>
+                </div>
+                <div class="admin-feature">
+                    <span class="material-symbols-outlined">verified_user</span>
+                    <span>Verify voters and manage registrations</span>
+                </div>
+                <div class="admin-feature">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                    <span>View live tallies & publish results</span>
+                </div>
+                <div class="admin-feature">
+                    <span class="material-symbols-outlined">shield</span>
+                    <span>Full audit trail and security logs</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Panel -->
+    <div class="login-panel">
+        <div class="login-card">
+            <!-- Access Denied (shown if no secret key) -->
+            <div id="access-denied" class="access-denied" style="display:none;">
+                <span class="material-symbols-outlined">block</span>
+                <h2 style="margin-bottom:.5rem;">Access Denied</h2>
+                <p class="text-muted">This page requires a valid admin signup link.<br>Contact the system administrator.</p>
+                <a href="/admin/login.html" class="btn btn-primary mt-6" style="display:inline-flex;">
+                    <span class="material-symbols-outlined">login</span>
+                    Go to Admin Login
+                </a>
+            </div>
+
+            <!-- Signup Form (shown if valid key) -->
+            <div id="signup-section">
+                <div class="login-header">
+                    <img src="/assets/au-logo.jpg" alt="AU" class="login-logo" onerror="this.style.display='none'"/>
+                    <div class="admin-badge">
+                        <span class="material-symbols-outlined" style="font-size:.875rem">admin_panel_settings</span>
+                        Admin Registration
+                    </div>
+                    <h2 style="font-size:1.5rem;margin-bottom:.25rem;">Create Admin Account</h2>
+                    <p class="text-muted text-sm">Register as a system administrator</p>
+                </div>
+
+                <form id="signup-form" class="flex-col gap-4">
+                    <div class="name-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="first_name">First Name <span class="req">*</span></label>
+                            <input class="form-input" id="first_name" type="text" placeholder="First name" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="last_name">Last Name <span class="req">*</span></label>
+                            <input class="form-input" id="last_name" type="text" placeholder="Last name" required/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="matric">Admin ID <span class="req">*</span></label>
+                        <div class="input-group">
+                            <span class="material-symbols-outlined input-icon">badge</span>
+                            <input class="form-input" id="matric" type="text" placeholder="e.g. ADMIN002" required/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <div class="input-group">
+                            <span class="material-symbols-outlined input-icon">mail</span>
+                            <input class="form-input" id="email" type="email" placeholder="admin@adelekeuniversity.edu.ng"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password <span class="req">*</span></label>
+                        <div class="input-group">
+                            <span class="material-symbols-outlined input-icon">lock</span>
+                            <input class="form-input" id="password" type="password"
+                                   placeholder="Minimum 8 characters" minlength="8"
+                                   required style="padding-right:2.75rem"/>
+                            <button type="button" id="toggle-pw" class="icon-btn"
+                                    style="position:absolute;right:.25rem">
+                                <span class="material-symbols-outlined" style="font-size:1.1rem">visibility</span>
+                            </button>
+                        </div>
+                        <div class="pw-strength">
+                            <div class="pw-strength-bar" id="pw-bar" style="width:0%"></div>
+                        </div>
+                        <p class="form-hint" id="pw-hint">Must be at least 8 characters</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password2">Confirm Password <span class="req">*</span></label>
+                        <div class="input-group">
+                            <span class="material-symbols-outlined input-icon">lock</span>
+                            <input class="form-input" id="password2" type="password"
+                                   placeholder="Re-enter your password" minlength="8" required/>
+                        </div>
+                    </div>
+
+                    <p id="signup-error" class="form-error"></p>
+
+                    <button type="submit" class="btn btn-primary w-full btn-lg" id="signup-btn">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        Create Admin Account
+                    </button>
+                </form>
+
+                <div class="text-center mt-4" style="font-size:.875rem;color:var(--text-2);">
+                    Already have an admin account?
+                    <a href="/admin/login.html" style="font-weight:600">Sign in</a>
+                </div>
+
+                <div class="flex items-center justify-center gap-2 mt-6"
+                     style="font-size:.75rem;color:var(--text-3);">
+                    <span class="material-symbols-outlined" style="font-size:1rem;color:var(--success)">lock</span>
+                    SSL encrypted · Adeleke University &copy; 2026
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Check for secret key in URL
+    const params = new URLSearchParams(window.location.search);
+    const secretKey = params.get('key');
+
+    if (!secretKey) {
+        document.getElementById('signup-section').style.display = 'none';
+        document.getElementById('access-denied').style.display = 'block';
+        return;
+    }
+
+    // Redirect if already logged in as admin
+    const s = Auth.getSession();
+    if (s?.role === 'uni_admin' || s?.role === 'faculty_admin') {
+        window.location.href = '/admin/dashboard.html'; return;
+    }
+
+    // Password toggle
+    document.getElementById('toggle-pw').addEventListener('click', function() {
+        const pw = document.getElementById('password');
+        const icon = this.querySelector('.material-symbols-outlined');
+        pw.type = pw.type === 'password' ? 'text' : 'password';
+        icon.textContent = pw.type === 'password' ? 'visibility' : 'visibility_off';
+    });
+
+    // Password strength
+    document.getElementById('password').addEventListener('input', function() {
+        const val = this.value;
+        const bar = document.getElementById('pw-bar');
+        const hint = document.getElementById('pw-hint');
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (val.length >= 12) score++;
+        if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        const pct = Math.min(score * 20, 100);
+        const colors = ['var(--danger)', 'var(--danger)', 'var(--warning)', 'var(--au-gold)', 'var(--success)'];
+        const labels = ['Very weak', 'Weak', 'Fair', 'Good', 'Strong'];
+        bar.style.width = pct + '%';
+        bar.style.background = colors[Math.min(score, 4)];
+        hint.textContent = val.length === 0 ? 'Must be at least 8 characters' : labels[Math.min(score, 4)];
+    });
+
+    // Submit
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('signup-btn');
+        const errEl = document.getElementById('signup-error');
+
+        const data = {
+            first_name: document.getElementById('first_name').value.trim(),
+            last_name: document.getElementById('last_name').value.trim(),
+            matric: document.getElementById('matric').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+        };
+        const pw2 = document.getElementById('password2').value;
+
+        errEl.classList.remove('visible');
+
+        if (data.password !== pw2) {
+            errEl.textContent = 'Passwords do not match.';
+            errEl.classList.add('visible');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Creating...';
+
+        try {
+            const res = await API.post(`/auth/admin-register/${secretKey}/`, data);
+            Auth.setSession(res.user, res.token);
+            Toast.show('Admin account created!', 'success');
+            setTimeout(() => window.location.href = '/admin/dashboard.html', 1000);
+        } catch (err) {
+            errEl.textContent = err.message || 'Registration failed. Please try again.';
+            errEl.classList.add('visible');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">admin_panel_settings</span> Create Admin Account';
+        }
+    });
+});
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

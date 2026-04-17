@@ -4,10 +4,29 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from django.conf import settings
 from .serializers import (
-    RegisterSerializer, LoginSerializer,
+    RegisterSerializer, AdminRegisterSerializer, LoginSerializer,
     UserSerializer, ChangePasswordSerializer,
 )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def admin_register(request, secret_key):
+    """Register a new admin account (protected by secret key in URL)."""
+    expected_key = getattr(settings, 'ADMIN_SIGNUP_SECRET', 'au-admin-secret-2026')
+    if secret_key != expected_key:
+        return Response({'error': 'Invalid signup link.'}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = AdminRegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({
+        'user': UserSerializer(user).data,
+        'token': token.key,
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])

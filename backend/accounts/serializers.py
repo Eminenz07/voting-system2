@@ -22,6 +22,27 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
+class AdminRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = ['matric', 'first_name', 'last_name', 'email', 'password']
+
+    def validate_matric(self, value):
+        value = value.strip().upper()
+        if User.objects.filter(matric=value).exists():
+            raise serializers.ValidationError('This admin ID is already registered.')
+        return value
+
+    def create(self, validated_data):
+        validated_data['role'] = 'uni_admin'
+        validated_data['is_staff'] = True
+        validated_data['is_superuser'] = True
+        validated_data['is_verified'] = True
+        return User.objects.create_user(**validated_data)
+
+
 class LoginSerializer(serializers.Serializer):
     matric = serializers.CharField()
     password = serializers.CharField()
