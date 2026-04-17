@@ -135,5 +135,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://voting-system2-production.up.railway.app',
+    'https://au-voting-system-chi.vercel.app',
+]
+
 # ── Default PK field ──────────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
