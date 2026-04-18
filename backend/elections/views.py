@@ -78,6 +78,12 @@ def student_ballot(request, election_id):
     if election.status != 'active':
         return Response({'detail': 'This election is not currently active.'}, status=400)
 
+    now = timezone.now()
+    if now < election.start_date:
+        return Response({'detail': 'Voting has not started yet. Please check the start time.'}, status=400)
+    if now > election.end_date:
+        return Response({'detail': 'Voting has ended for this election.'}, status=400)
+
     has_voted = Vote.objects.filter(election=election, voter=request.user).exists()
     positions = election.positions.prefetch_related('candidates').all()
 
@@ -112,6 +118,12 @@ def student_vote(request, election_id):
 
     if election.status != 'active':
         return Response({'detail': 'This election is not currently active.'}, status=400)
+
+    now = timezone.now()
+    if now < election.start_date:
+        return Response({'detail': 'Voting has not started yet.'}, status=400)
+    if now > election.end_date:
+        return Response({'detail': 'Voting has ended for this election.'}, status=400)
 
     if not user.is_verified:
         return Response({'detail': 'Your account must be verified to vote.'}, status=403)

@@ -448,6 +448,8 @@ h4 { font-size: 1rem;   font-weight: 600; }
 }
 .input-group .form-input { padding-left: 2.5rem; }
 
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; font-size: .875rem; }
@@ -659,9 +661,10 @@ tbody tr:hover { background: var(--surface-2); }
     .stat-grid { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 560px) {
-    .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
+    .grid-2,.grid-3,.grid-4, .form-row { grid-template-columns: 1fr; }
     .stat-grid { grid-template-columns: 1fr; }
     h1 { font-size: 1.5rem; }
+    .auth-panel { padding: 2rem 1rem; }
 }
 
 /* ── Print ───────────────────────────────────────────────────────────────── */
