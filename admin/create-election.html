@@ -291,7 +291,7 @@
                     </button>
                     <button class="btn btn-primary btn-lg" id="create-btn" onclick="createElection()">
                         <span class="material-symbols-outlined">add_circle</span>
-                        Create Election (Draft)
+                        Create Election
                     </button>
                 </div>
             </div>
@@ -538,14 +538,13 @@ async function createElection() {
     btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Creating…';
 
     try {
-        // 1. Create the election
         const payload = {
             title: electionData.title,
             description: electionData.description,
             election_type: electionData.election_type,
             start_date: new Date(electionData.start_date).toISOString(),
             end_date: new Date(electionData.end_date).toISOString(),
-            status: 'draft',
+            status: 'active',
         };
         if (electionData.faculty_scope) payload.faculty_scope = electionData.faculty_scope;
         if (electionData.department_scope) payload.department_scope = electionData.department_scope;
@@ -575,7 +574,7 @@ async function createElection() {
     } catch (err) {
         Toast.show(err.message || 'Failed to create election.', 'error');
         btn.disabled = false;
-        btn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Create Election (Draft)';
+        btn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Create Election';
     }
 }
 </script>
