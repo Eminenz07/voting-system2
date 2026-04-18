@@ -1,5 +1,6 @@
 """Election serializers for both student and admin APIs."""
 from rest_framework import serializers
+from django.utils import timezone
 from .models import Election, Position, Candidate, Vote, Nomination, Announcement, AuditLog
 
 
@@ -94,6 +95,24 @@ class ElectionCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'election_type',
                   'faculty_scope', 'department_scope',
                   'status', 'start_date', 'end_date']
+
+    def validate(self, data):
+        start = data.get('start_date')
+        end = data.get('end_date')
+        now = timezone.now()
+        
+        if start and end and end <= start:
+            raise serializers.ValidationError('End date must be after start date.')
+            
+        if self.instance is None:
+            # Creation: Dates cannot be strict past (5 min grace period)
+            grace = now - timezone.timedelta(minutes=5)
+            if start and start < grace:
+                raise serializers.ValidationError('Start date cannot be in the past.')
+            if end and end < now:
+                raise serializers.ValidationError('End date cannot be in the past.')
+                
+        return data
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user

@@ -41,6 +41,11 @@ def log_action(user, action, details='', request=None):
         ip_address=get_client_ip(request) if request else None,
     )
 
+def _update_expired_elections():
+    """Lazily mark any active election as completed if its end_date has passed."""
+    now = timezone.now()
+    Election.objects.filter(status='active', end_date__lt=now).update(status='completed')
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDENT ENDPOINTS
@@ -50,6 +55,7 @@ def log_action(user, action, details='', request=None):
 @permission_classes([IsAuthenticated])
 def student_elections(request):
     """GET /api/elections/ — list elections visible to student."""
+    _update_expired_elections()
     user = request.user
     elections = Election.objects.exclude(status='draft')
 
@@ -210,6 +216,7 @@ def admin_required(view_func):
 @admin_required
 def admin_dashboard(request):
     """GET /api/admin/dashboard/ — KPIs and overview for admin dashboard."""
+    _update_expired_elections()
     user = request.user
     total_students = User.objects.filter(role='student').count()
     verified_students = User.objects.filter(role='student', is_verified=True).count()
@@ -249,6 +256,7 @@ def admin_elections(request):
     GET  /api/admin/elections/   — list all elections
     POST /api/admin/elections/   — create new election
     """
+    _update_expired_elections()
     if request.method == 'GET':
         qs = Election.objects.all()
         if request.user.role == 'faculty_admin':

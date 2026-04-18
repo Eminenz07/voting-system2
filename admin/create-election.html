@@ -359,14 +359,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Step 1 form
     document.getElementById('details-form').addEventListener('submit', (e) => {
         e.preventDefault();
+        
+        const startStr = document.getElementById('e-start').value;
+        const endStr = document.getElementById('e-end').value;
+        const startDate = new Date(startStr);
+        const endDate = new Date(endStr);
+        const now = new Date();
+        
+        // 5 minute grace period for past time
+        if (startDate < new Date(now.getTime() - 5 * 60 * 1000)) {
+            Toast.show('Start time cannot be in the past.', 'error');
+            return;
+        }
+        if (endDate <= startDate) {
+            Toast.show('End time must be after the start time.', 'error');
+            return;
+        }
+        if (endDate < now) {
+            Toast.show('End time cannot be in the past.', 'error');
+            return;
+        }
+
         electionData = {
             title: document.getElementById('e-title').value.trim(),
             description: document.getElementById('e-desc').value.trim(),
             election_type: document.getElementById('e-type').value,
             faculty_scope: document.getElementById('e-faculty').value,
             department_scope: document.getElementById('e-dept').value.trim(),
-            start_date: document.getElementById('e-start').value,
-            end_date: document.getElementById('e-end').value,
+            start_date: startStr,
+            end_date: endStr,
         };
         goToStep(2);
     });
