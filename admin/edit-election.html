@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AU Vote Admin — Edit Election</title>
+<meta name="description" content="Edit an election in the Adeleke University E-Voting System."/>
+<link rel="stylesheet" href="/assets/css/app.css"/>
+<style>
+.edit-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.edit-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+.edit-section-header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.edit-section-header h3 .material-symbols-outlined {
+    font-size: 1.25rem;
+    color: var(--au-blue);
+}
+
+/* Position/candidate items */
+.item-card {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: .5rem;
+    transition: border-color .15s;
+}
+.item-card:hover { border-color: var(--au-blue); }
+.item-card-info { flex: 1; }
+.item-card-info .name { font-weight: 600; font-size: .9375rem; }
+.item-card-info .meta { font-size: .75rem; color: var(--text-3); }
+.item-avatar {
+    width: 2rem; height: 2rem;
+    border-radius: 50%;
+    background: var(--au-blue-light);
+    color: var(--au-blue);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .75rem; flex-shrink: 0;
+}
+
+.add-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--au-blue);
+    font-size: .875rem;
+    font-weight: 600;
+    transition: border-color .15s, background .15s;
+    margin-top: .5rem;
+}
+.add-row:hover { border-color: var(--au-blue); background: var(--au-blue-light); }
+
+.position-block { margin-bottom: 1.25rem; }
+.position-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .5rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+}
+.position-block-header h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex; align-items: center; gap: .5rem;
+}
+
+/* Candidate form modal */
+.modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    backdrop-filter:blur(4px); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:1.5rem;
+}
+.modal {
+    background:var(--surface); border-radius:var(--radius-xl);
+    padding:2rem; max-width:28rem; width:100%;
+    max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg);
+}
+.hidden { display:none !important; }
+
+/* Live lock banner */
+.lock-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1.5px solid #f59e0b;
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    color: #92400e;
+    font-size: .875rem;
+    font-weight: 500;
+}
+.lock-banner .material-symbols-outlined { font-size: 1.5rem; color: #d97706; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <a href="/admin/dashboard.html" class="brand">
+            <img src="/assets/au-logo.jpg" class="brand-logo" alt="AU" onerror="this.style.display='none'"/>
+            <div>
+                <div class="brand-name">AU Vote — Admin</div>
+                <div class="brand-sub">Edit Election</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="DarkMode.toggle()">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+            <button class="icon-btn" onclick="Auth.logout()" title="Sign out">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="app-sidebar" id="sidebar"></aside>
+
+    <main class="app-main">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="/admin/elections.html" class="icon-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 style="font-size:1.625rem;margin-bottom:.25rem" id="page-title">Edit Election</h1>
+                <p class="text-muted text-sm" id="page-subtitle">Modify election details, positions, and candidates</p>
+            </div>
+        </div>
+
+        <!-- Lock banner (shown if election is live) -->
+        <div class="lock-banner hidden" id="lock-banner">
+            <span class="material-symbols-outlined">lock</span>
+            <div>
+                <strong>This election is live and cannot be edited.</strong>
+                <div style="font-size:.8125rem;margin-top:.125rem">Elections can only be modified before their start time. Cancel the election if you need to make changes.</div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading-state" style="text-align:center;padding:4rem;color:var(--text-3)">
+            <span class="material-symbols-outlined" style="font-size:2rem;animation:spin 1s linear infinite">progress_activity</span>
+            <p style="margin-top:1rem">Loading election…</p>
+        </div>
+
+        <!-- Main edit content (hidden until load) -->
+        <div id="edit-content" class="hidden">
+
+            <!-- Election Details Section -->
+            <div class="edit-section">
+                <div class="edit-section-header">
+                    <h3><span class="material-symbols-outlined">info</span> Election Details</h3>
+                </div>
+                <form id="details-form" class="flex-col gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="e-title">Election Title <span class="req">*</span></label>
+                        <input class="form-input" id="e-title" type="text" required/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="e-desc">Description</label>
+                        <textarea class="form-textarea" id="e-desc"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="e-type">Election Type <span class="req">*</span></label>
+                        <select class="form-select" id="e-type" required>
+                            <option value="university">University-wide</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="departmental">Departmental</option>
+                        </select>
+                    </div>
+                    <div id="scope-fields" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="e-faculty">Faculty Scope</label>
+                                <select class="form-select" id="e-faculty">
+                                    <option value="">Select faculty</option>
+                                    <option>Sciences</option>
+                                    <option>Engineering</option>
+                                    <option>Arts</option>
+                                    <option>Law</option>
+                                    <option>FBMS</option>
+                                    <option>FBSS</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="dept-scope-group" style="display:none">
+                                <label class="form-label" for="e-dept">Department Scope</label>
+                                <input class="form-input" id="e-dept" type="text"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="e-start">Start Date & Time <span class="req">*</span></label>
+                            <input class="form-input" id="e-start" type="datetime-local" required/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="e-end">End Date & Time <span class="req">*</span></label>
+                            <input class="form-input" id="e-end" type="datetime-local" required/>
+                        </div>
+                    </div>
+                    <div class="flex gap-2" style="justify-content:flex-end">
+                        <button type="submit" class="btn btn-primary" id="save-details-btn">
+                            <span class="material-symbols-outlined" style="font-size:1rem">save</span>
+                            Save Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Positions & Candidates Section -->
+            <div class="edit-section">
+                <div class="edit-section-header">
+                    <h3><span class="material-symbols-outlined">ballot</span> Positions & Candidates</h3>
+                </div>
+                <div id="positions-container"></div>
+                <div class="add-row" id="add-position-btn" onclick="addPosition()">
+                    <span class="material-symbols-outlined" style="font-size:1rem">add</span>
+                    Add Position
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Add Candidate Modal -->
+<div class="modal-overlay hidden" id="cand-modal" onclick="if(event.target===this)closeCandModal()">
+    <div class="modal">
+        <div class="flex items-center justify-between mb-4">
+            <h2 style="font-size:1.25rem">Add Candidate</h2>
+            <button class="icon-btn" onclick="closeCandModal()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form id="cand-form" class="flex-col gap-4">
+            <input type="hidden" id="cand-pos-id"/>
+            <div class="form-group">
+                <label class="form-label" for="c-name">Candidate Name <span class="req">*</span></label>
+                <input class="form-input" id="c-name" type="text" required placeholder="Full name"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-party">Party / Affiliation</label>
+                <input class="form-input" id="c-party" type="text" placeholder="e.g. Progressive Students Alliance"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-bio">Bio</label>
+                <textarea class="form-textarea" id="c-bio" maxlength="500" placeholder="Brief bio (max 500 chars)"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="c-photo">Photo URL</label>
+                <input class="form-input" id="c-photo" type="url" placeholder="https://…"/>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end">
+                <button type="button" class="btn btn-outline" onclick="closeCandModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Candidate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const electionId = params.get('id');
+let election = null;
+let positionsData = [];
+let isLocked = false;
+
+if (!electionId) {
+    window.location.href = '/admin/elections.html';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = Auth.requireAdmin();
+    if (!user) return;
+    document.getElementById('sidebar').appendChild(Nav.admin('elections'));
+
+    // Election type toggle
+    document.getElementById('e-type').addEventListener('change', function() {
+        const scope = document.getElementById('scope-fields');
+        const dept = document.getElementById('dept-scope-group');
+        if (this.value === 'university') {
+            scope.classList.add('hidden');
+        } else {
+            scope.classList.remove('hidden');
+            dept.style.display = this.value === 'departmental' ? '' : 'none';
+        }
+    });
+
+    // Save details form
+    document.getElementById('details-form').addEventListener('submit', saveDetails);
+
+    // Candidate modal form
+    document.getElementById('cand-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const posId = document.getElementById('cand-pos-id').value;
+        try {
+            await API.post(`/admin/elections/${electionId}/positions/${posId}/candidates/`, {
+                name: document.getElementById('c-name').value.trim(),
+                party: document.getElementById('c-party').value.trim(),
+                bio: document.getElementById('c-bio').value.trim(),
+                photo_url: document.getElementById('c-photo').value.trim(),
+                status: 'approved',
+            });
+            Toast.show('Candidate added!', 'success');
+            closeCandModal();
+            await loadPositions();
+        } catch (err) {
+            Toast.show(err.message || 'Failed to add candidate.', 'error');
+        }
+    });
+
+    await loadElection();
+});
+
+async function loadElection() {
+    try {
+        election = await API.get(`/admin/elections/${electionId}/`);
+        document.getElementById('page-title').textContent = `Edit: ${election.title}`;
+
+        // Determine if election is locked (live: active + start_date has passed)
+        const now = new Date();
+        const startDate = new Date(election.start_date);
+        isLocked = election.status === 'active' && now >= startDate;
+
+        if (isLocked) {
+            document.getElementById('lock-banner').classList.remove('hidden');
+        }
+
+        // Fill in details form
+        document.getElementById('e-title').value = election.title;
+        document.getElementById('e-desc').value = election.description || '';
+        document.getElementById('e-type').value = election.election_type;
+
+        // Trigger scope display
+        const typeEl = document.getElementById('e-type');
+        typeEl.dispatchEvent(new Event('change'));
+        if (election.faculty_scope) document.getElementById('e-faculty').value = election.faculty_scope;
+        if (election.department_scope) document.getElementById('e-dept').value = election.department_scope;
+
+        // Format datetime-local values
+        document.getElementById('e-start').value = toLocalDatetimeStr(election.start_date);
+        document.getElementById('e-end').value = toLocalDatetimeStr(election.end_date);
+
+        // Disable form if locked
+        if (isLocked) {
+            document.querySelectorAll('#details-form input, #details-form select, #details-form textarea, #details-form button').forEach(el => {
+                el.disabled = true;
+            });
+            document.getElementById('add-position-btn').style.display = 'none';
+        }
+
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('edit-content').classList.remove('hidden');
+
+        await loadPositions();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to load election.', 'error');
+    }
+}
+
+function toLocalDatetimeStr(isoStr) {
+    const d = new Date(isoStr);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function loadPositions() {
+    try {
+        positionsData = await API.get(`/admin/elections/${electionId}/positions/`);
+        renderPositions();
+    } catch (err) {
+        Toast.show('Failed to load positions.', 'error');
+    }
+}
+
+function renderPositions() {
+    const container = document.getElementById('positions-container');
+    if (!positionsData.length) {
+        container.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-3);font-size:.875rem">No positions added yet.</div>';
+        return;
+    }
+
+    container.innerHTML = positionsData.map(pos => `
+        <div class="position-block">
+            <div class="position-block-header">
+                <h4>
+                    <span class="badge badge--blue">${pos.order || ''}</span>
+                    ${pos.title}
+                    <span style="font-size:.8125rem;color:var(--text-3);font-weight:400">(${pos.candidates.length} candidate${pos.candidates.length !== 1 ? 's' : ''})</span>
+                </h4>
+                ${!isLocked ? `
+                <button class="btn btn-ghost btn-xs" onclick="deletePosition(${pos.id})" title="Delete position" style="color:var(--danger)">
+                    <span class="material-symbols-outlined" style="font-size:1rem">delete</span>
+                    Remove
+                </button>` : ''}
+            </div>
+            ${pos.candidates.map(c => `
+                <div class="item-card">
+                    <div class="item-avatar">${c.name.substring(0, 2).toUpperCase()}</div>
+                    <div class="item-card-info">
+                        <div class="name">${c.name}</div>
+                        <div class="meta">${c.party || 'Independent'}${c.bio ? ' · ' + c.bio.slice(0, 60) + '…' : ''}</div>
+                    </div>
+                    ${!isLocked ? `
+                    <button class="icon-btn" onclick="deleteCandidate(${pos.id}, ${c.id})" title="Remove candidate">
+                        <span class="material-symbols-outlined" style="font-size:1rem;color:var(--danger)">close</span>
+                    </button>` : ''}
+                </div>`).join('')}
+            ${!isLocked ? `
+            <div class="add-row" onclick="openCandModal(${pos.id})" style="margin-top:.5rem">
+                <span class="material-symbols-outlined" style="font-size:1rem">person_add</span>
+                Add Candidate to ${pos.title}
+            </div>` : ''}
+        </div>`).join('');
+}
+
+async function saveDetails(e) {
+    e.preventDefault();
+    if (isLocked) return;
+
+    const startStr = document.getElementById('e-start').value;
+    const endStr = document.getElementById('e-end').value;
+    const startDate = new Date(startStr);
+    const endDate = new Date(endStr);
+
+    if (endDate <= startDate) {
+        Toast.show('End time must be after the start time.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('save-details-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem;animation:spin 1s linear infinite">progress_activity</span> Saving…';
+
+    try {
+        const payload = {
+            title: document.getElementById('e-title').value.trim(),
+            description: document.getElementById('e-desc').value.trim(),
+            election_type: document.getElementById('e-type').value,
+            faculty_scope: document.getElementById('e-faculty').value,
+            department_scope: document.getElementById('e-dept').value.trim(),
+            start_date: new Date(startStr).toISOString(),
+            end_date: new Date(endStr).toISOString(),
+        };
+
+        await API.patch(`/admin/elections/${electionId}/`, payload);
+        Toast.show('Election details saved!', 'success');
+    } catch (err) {
+        Toast.show(err.message || 'Failed to save.', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1rem">save</span> Save Details';
+}
+
+async function addPosition() {
+    if (isLocked) return;
+    const title = prompt('Position title (e.g. President, Secretary):');
+    if (!title || !title.trim()) return;
+
+    try {
+        await API.post(`/admin/elections/${electionId}/positions/`, {
+            title: title.trim(),
+            order: positionsData.length + 1,
+        });
+        Toast.show('Position added!', 'success');
+        await loadPositions();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to add position.', 'error');
+    }
+}
+
+async function deletePosition(posId) {
+    if (isLocked) return;
+    if (!confirm('Delete this position and all its candidates?')) return;
+    try {
+        await API.delete(`/admin/elections/${electionId}/positions/${posId}/`);
+        Toast.show('Position deleted.', 'info');
+        await loadPositions();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to delete position.', 'error');
+    }
+}
+
+async function deleteCandidate(posId, candId) {
+    if (isLocked) return;
+    if (!confirm('Remove this candidate?')) return;
+    try {
+        await API.delete(`/admin/elections/${electionId}/positions/${posId}/candidates/${candId}/`);
+        Toast.show('Candidate removed.', 'info');
+        await loadPositions();
+    } catch (err) {
+        Toast.show(err.message || 'Failed to remove candidate.', 'error');
+    }
+}
+
+function openCandModal(posId) {
+    if (isLocked) return;
+    document.getElementById('cand-pos-id').value = posId;
+    document.getElementById('cand-form').reset();
+    document.getElementById('cand-modal').classList.remove('hidden');
+}
+function closeCandModal() {
+    document.getElementById('cand-modal').classList.add('hidden');
+}
+</script>
+</body>
+</html>

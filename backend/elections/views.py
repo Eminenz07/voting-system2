@@ -46,6 +46,11 @@ def _update_expired_elections():
     now = timezone.now()
     Election.objects.filter(status='active', end_date__lt=now).update(status='completed')
 
+def _election_is_live(election):
+    """Return True if the election has started (start_date is in the past) and is active."""
+    now = timezone.now()
+    return election.status == 'active' and now >= election.start_date
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDENT ENDPOINTS
@@ -289,12 +294,16 @@ def admin_election_detail(request, election_id):
         return Response(ElectionListSerializer(election, context={'request': request}).data)
 
     if request.method == 'DELETE':
+        if _election_is_live(election):
+            return Response({'detail': 'Cannot delete a live election.'}, status=400)
         title = election.title
         election.delete()
         log_action(request.user, 'election_deleted', title, request)
         return Response(status=204)
 
     # PATCH
+    if _election_is_live(election):
+        return Response({'detail': 'Cannot edit a live election. Wait until it ends or cancel it first.'}, status=400)
     serializer = ElectionCreateSerializer(election, data=request.data, partial=True,
                                           context={'request': request})
     serializer.is_valid(raise_exception=True)
@@ -368,10 +377,32 @@ def admin_positions(request, election_id):
         positions = election.positions.prefetch_related('candidates').all()
         return Response(PositionSerializer(positions, many=True).data)
 
+    if _election_is_live(election):
+        return Response({'detail': 'Cannot modify positions of a live election.'}, status=400)
     serializer = PositionCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     position = serializer.save(election=election)
     return Response(PositionCreateSerializer(position).data, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@admin_required
+def admin_position_detail(request, election_id, position_id):
+    """DELETE /api/admin/elections/<id>/positions/<pid>/"""
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=404)
+    if _election_is_live(election):
+        return Response({'detail': 'Cannot modify a live election.'}, status=400)
+    try:
+        position = Position.objects.get(id=position_id, election_id=election_id)
+    except Position.DoesNotExist:
+        return Response({'detail': 'Position not found.'}, status=404)
+    position.delete()
+    log_action(request.user, 'position_deleted', f'{position.title} from {election.title}', request)
+    return Response(status=204)
 
 
 @api_view(['GET', 'POST'])
@@ -383,6 +414,10 @@ def admin_candidates(request, election_id, position_id):
     POST /api/admin/elections/<id>/positions/<pid>/candidates/
     """
     try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=404)
+    try:
         position = Position.objects.get(id=position_id, election_id=election_id)
     except Position.DoesNotExist:
         return Response({'detail': 'Position not found.'}, status=404)
@@ -391,10 +426,33 @@ def admin_candidates(request, election_id, position_id):
         candidates = position.candidates.all()
         return Response(CandidateCreateSerializer(candidates, many=True).data)
 
+    if _election_is_live(election):
+        return Response({'detail': 'Cannot modify candidates of a live election.'}, status=400)
     serializer = CandidateCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     candidate = serializer.save(position=position)
     return Response(CandidateCreateSerializer(candidate).data, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@admin_required
+def admin_candidate_detail(request, election_id, position_id, candidate_id):
+    """DELETE /api/admin/elections/<id>/positions/<pid>/candidates/<cid>/"""
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=404)
+    if _election_is_live(election):
+        return Response({'detail': 'Cannot modify a live election.'}, status=400)
+    try:
+        candidate = Candidate.objects.get(id=candidate_id, position_id=position_id,
+                                          position__election_id=election_id)
+    except Candidate.DoesNotExist:
+        return Response({'detail': 'Candidate not found.'}, status=404)
+    candidate.delete()
+    log_action(request.user, 'candidate_deleted', f'{candidate.name} from {election.title}', request)
+    return Response(status=204)
 
 
 # ── Voters ────────────────────────────────────────────────────────────────────

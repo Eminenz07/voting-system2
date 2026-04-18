@@ -216,6 +216,10 @@ function renderTable() {
             <td>${e.results_published ? '<span class="badge badge--active">Published</span>' : '<span class="badge badge--draft">Private</span>'}</td>
             <td style="text-align:right">
                 <div class="election-actions">
+                    ${canEdit(e) ? `
+                    <a href="/admin/edit-election.html?id=${e.id}" class="btn btn-ghost btn-xs" title="Edit election">
+                        <span class="material-symbols-outlined" style="font-size:1rem">edit</span>
+                    </a>` : ''}
                     <button class="btn btn-ghost btn-xs" onclick="openStatusModal(${e.id})" title="Change status">
                         <span class="material-symbols-outlined" style="font-size:1rem">swap_horiz</span>
                     </button>
@@ -228,6 +232,15 @@ function renderTable() {
                 </div>
             </td>
         </tr>`).join('');
+}
+
+function canEdit(e) {
+    // Editable if: not yet live (status is draft/cancelled, OR active but start time hasn't arrived)
+    if (e.status === 'completed') return false;
+    if (e.status === 'cancelled') return true;
+    if (e.status === 'draft') return true;
+    // active: check if start time is still in the future
+    return new Date(e.start_date) > new Date();
 }
 
 let statusElectionId = null;

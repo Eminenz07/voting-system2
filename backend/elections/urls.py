@@ -21,8 +21,12 @@ urlpatterns = [
 
     # Nested: positions + candidates
     path('admin/elections/<int:election_id>/positions/', views.admin_positions, name='admin-positions'),
+    path('admin/elections/<int:election_id>/positions/<int:position_id>/',
+         views.admin_position_detail, name='admin-position-detail'),
     path('admin/elections/<int:election_id>/positions/<int:position_id>/candidates/',
          views.admin_candidates, name='admin-candidates'),
+    path('admin/elections/<int:election_id>/positions/<int:position_id>/candidates/<int:candidate_id>/',
+         views.admin_candidate_detail, name='admin-candidate-detail'),
 
     # Voters
     path('admin/voters/', views.admin_voters, name='admin-voters'),
