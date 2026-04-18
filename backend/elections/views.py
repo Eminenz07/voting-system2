@@ -57,9 +57,9 @@ def student_elections(request):
     if user.role == 'student':
         elections = elections.filter(
             Q(election_type='university') |
-            Q(election_type='faculty', faculty_scope=user.faculty) |
-            Q(election_type='departmental', faculty_scope=user.faculty,
-              department_scope=user.department)
+            Q(election_type='faculty', faculty_scope__iexact=user.faculty) |
+            Q(election_type='departmental', faculty_scope__iexact=user.faculty,
+              department_scope__iexact=user.department)
         )
 
     serializer = ElectionListSerializer(elections, many=True, context={'request': request})
@@ -252,7 +252,7 @@ def admin_elections(request):
     if request.method == 'GET':
         qs = Election.objects.all()
         if request.user.role == 'faculty_admin':
-            qs = qs.filter(faculty_scope=request.user.faculty)
+            qs = qs.filter(faculty_scope__iexact=request.user.faculty)
         return Response(ElectionListSerializer(qs, many=True, context={'request': request}).data)
 
     # POST: create
