@@ -56,6 +56,16 @@ const Auth = {
         }
         return s;
     },
+    async refreshSession() {
+        try {
+            const user = await API.get('/auth/me/');
+            const token = localStorage.getItem('au_token');
+            if (user && user.id && token) {
+                this.setSession(user, token);
+                return user;
+            }
+        } catch { return null; }
+    },
     async logout() {
         try { await API.post('/auth/logout/'); } catch {}
         this.clear();

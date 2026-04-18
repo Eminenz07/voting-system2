@@ -665,10 +665,9 @@ tbody tr:hover { background: var(--surface-2); }
     .stat-grid { grid-template-columns: 1fr; }
     h1 { font-size: 1.5rem; }
     .auth-panel { padding: 2rem 1rem; }
-    .brand-name, .brand-sub { display: none; }
     #user-name-chip { display: none; }
     .header-actions { gap: .25rem; }
-    .user-chip { padding: .25rem; border-radius: 50%; width: 2.25rem; height: 2.25rem; justify-content: center; }
+    .user-chip { padding: .25rem; border-radius: 50%; width: 2.25rem; height: 2.25rem; justify-content: center; cursor: pointer; }
 }
 
 /* ── Print ───────────────────────────────────────────────────────────────── */

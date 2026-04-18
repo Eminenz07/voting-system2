@@ -118,6 +118,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('user-name-chip').textContent = user.full_name || user.first_name;
     const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || '?';
     document.getElementById('avatar-initials').textContent = initials;
+    const uc = document.getElementById('user-chip');
+    if (uc) uc.onclick = () => window.location.href = '/student/profile.html';
 
     // Filter buttons
     document.getElementById('filter-bar').addEventListener('click', (e) => {

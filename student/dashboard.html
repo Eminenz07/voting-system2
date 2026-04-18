@@ -190,17 +190,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('welcome-name').textContent = user.first_name || user.full_name;
     const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || '?';
     document.getElementById('avatar-initials').textContent = initials;
+    const uc = document.getElementById('user-chip');
+    if (uc) uc.onclick = () => window.location.href = '/student/profile.html';
 
-    if (!user.is_verified) {
-        document.getElementById('verify-alert').classList.remove('hidden');
-        document.getElementById('stat-verified').textContent = 'Unverified';
-        document.getElementById('stat-verified').style.color = 'var(--danger)';
-        document.getElementById('stat-verified').style.fontSize = '1.25rem';
-    } else {
-        document.getElementById('stat-verified').textContent = 'Verified ✓';
-        document.getElementById('stat-verified').style.color = 'var(--success)';
-        document.getElementById('stat-verified').style.fontSize = '1.25rem';
+    function updateVerificationUI(isVerified) {
+        if (!isVerified) {
+            document.getElementById('verify-alert').classList.remove('hidden');
+            document.getElementById('stat-verified').textContent = 'Unverified';
+            document.getElementById('stat-verified').style.color = 'var(--danger)';
+            document.getElementById('stat-verified').style.fontSize = '1.25rem';
+        } else {
+            document.getElementById('verify-alert').classList.add('hidden');
+            document.getElementById('stat-verified').textContent = 'Verified ✓';
+            document.getElementById('stat-verified').style.color = 'var(--success)';
+            document.getElementById('stat-verified').style.fontSize = '1.25rem';
+        }
     }
+    
+    updateVerificationUI(user.is_verified);
+
+    // Silent background refresh
+    Auth.refreshSession().then(freshUser => {
+        if (freshUser && freshUser.is_verified !== user.is_verified) {
+            updateVerificationUI(freshUser.is_verified);
+        }
+    });
 
     // Load elections
     try {
